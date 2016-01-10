@@ -3,6 +3,8 @@
 
 
 #include <string>
+#include <list>
+
 
 
 struct ServerData {
@@ -13,6 +15,7 @@ struct ServerData {
     std::string password;
     std::string servername;
     size_t aliasset_id;
+    std::list<std::string> aliasset;
     std::string realnames;
     bool autoconnect;
 };

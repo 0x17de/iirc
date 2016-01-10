@@ -15,6 +15,7 @@ class UserHandler {
 
 public:
     UserHandler(const UserData& userData);
+    const UserData& getUserData();
     bool connect(const ServerData& serverData);
 };
 

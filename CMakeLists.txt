@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(SOURCE_FILES src/main.cpp src/IniReader.cpp src/IniReader.h src/DatabaseHandler.cpp src/DatabaseHandler.h src/Application.cpp src/Application.h src/UserHandler.cpp src/UserHandler.h src/IrcClient.cpp src/IrcClient.h src/data/ServerData.h src/config/db.h)
+set(SOURCE_FILES src/main.cpp src/IniReader.cpp src/IniReader.h src/DatabaseHandler.cpp src/DatabaseHandler.h src/Application.cpp src/Application.h src/UserHandler.cpp src/UserHandler.h src/IrcClient.cpp src/IrcClient.h src/data/ServerData.h src/config/db.h src/IrcClientImpl.cpp src/IrcClientImpl.h)
 
 
 

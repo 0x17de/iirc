@@ -5,13 +5,15 @@
 #include <memory>
 
 
+
+class UserHandler;
 class ServerData;
 class IrcClientImpl;
 class IrcClient {
     std::shared_ptr<IrcClientImpl> impl;
 
 public:
-    IrcClient(const ServerData& serverData);
+    IrcClient(UserHandler& userHandler, const ServerData& serverData);
     bool connect();
 };
 
