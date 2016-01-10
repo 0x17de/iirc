@@ -11,6 +11,16 @@
 #include "UserHandler.h"
 
 
+enum class IrcEvent {
+    Unknown,
+    Connect,
+    Quit,
+    Channel,
+    Join,
+    PrivMsg
+};
+
+
 class IrcClientImpl {
 public:
     UserHandler& userHandler;
@@ -28,6 +38,8 @@ public:
 
     IrcClientImpl(UserHandler& userHandler, const ServerData& serverData);
     ~IrcClientImpl();
+
+    template <IrcEvent> void onEvent(const char * event, const char * origin, const char ** params, unsigned int count);
     std::string getConnectionId();
     bool disconnect();
     bool connect();

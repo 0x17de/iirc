@@ -3,6 +3,8 @@
 //
 
 #include <iostream>
+#include <libircclient.h>
+#include <libirc_events.h>
 #include "IrcClientImpl.h"
 
 
@@ -16,8 +18,52 @@ IrcClientImpl* IrcClientImpl::getClientFromSessionId(irc_session_t* session) {
 }
 
 
+// Helper wrapper from C to C++
+template <IrcEvent T>
+static inline void onEvent(irc_session_t * session, const char * event, const char * origin, const char ** params, unsigned int count) {
+    IrcClientImpl::getClientFromSessionId(session)->onEvent<T>(event, origin, params, count);
+}
+
+
+template <>
+void IrcClientImpl::onEvent<IrcEvent::Unknown>(const char *event, const char *origin, const char **params, unsigned int count) {
+
+}
+
+template <>
+void IrcClientImpl::onEvent<IrcEvent::Connect>(const char *event, const char *origin, const char **params, unsigned int count) {
+
+}
+
+template <>
+void IrcClientImpl::onEvent<IrcEvent::Quit>(const char *event, const char *origin, const char **params, unsigned int count) {
+
+}
+
+template <>
+void IrcClientImpl::onEvent<IrcEvent::Channel>(const char *event, const char *origin, const char **params, unsigned int count) {
+
+}
+
+template <>
+void IrcClientImpl::onEvent<IrcEvent::PrivMsg>(const char *event, const char *origin, const char **params, unsigned int count) {
+
+}
+
+template <>
+void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origin, const char **params, unsigned int count) {
+
+}
+
+
 IrcClientImpl::IrcClientImpl(UserHandler& userHandler, const ServerData& serverData) : userHandler(userHandler), serverData(serverData), callbacks{0}, session{0} {
-    // TODO: assign callbacks
+    // register various events here
+    callbacks.event_unknown = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_connect = ::onEvent<IrcEvent::Connect>;
+    callbacks.event_quit = ::onEvent<IrcEvent::Quit>;
+    callbacks.event_channel = ::onEvent<IrcEvent::Channel>;
+    callbacks.event_privmsg = ::onEvent<IrcEvent::PrivMsg>;
+    callbacks.event_join = ::onEvent<IrcEvent::Join>;
 }
 
 IrcClientImpl::~IrcClientImpl() {
