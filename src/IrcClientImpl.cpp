@@ -21,7 +21,6 @@ IrcClientImpl* IrcClientImpl::getClientFromSessionId(irc_session_t* session) {
 // Helper wrapper from C to C++
 template <IrcEvent T>
 static inline void onEvent(irc_session_t * session, const char * event, const char * origin, const char ** params, unsigned int count) {
-    cerr << "onEvent" << endl;
     IrcClientImpl::getClientFromSessionId(session)->onEvent<T>(event, origin, params, count);
 }
 

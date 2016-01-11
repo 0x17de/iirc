@@ -2,6 +2,7 @@
 #include <iostream>
 #include <list>
 #include <csignal>
+#include <unistd.h>
 #include "IniReader.h"
 #include "DatabaseHandler.h"
 #include "UserHandler.h"
@@ -56,7 +57,7 @@ int Application::run() {
             userHandler.connect(serverData);
     }
 
-    while(running) {}
+    while(running) sleep(1);
 
     // Read IRC configuration from database
 
