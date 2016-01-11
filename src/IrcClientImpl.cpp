@@ -21,6 +21,7 @@ IrcClientImpl* IrcClientImpl::getClientFromSessionId(irc_session_t* session) {
 // Helper wrapper from C to C++
 template <IrcEvent T>
 static inline void onEvent(irc_session_t * session, const char * event, const char * origin, const char ** params, unsigned int count) {
+    cerr << "onEvent" << endl;
     IrcClientImpl::getClientFromSessionId(session)->onEvent<T>(event, origin, params, count);
 }
 
@@ -97,8 +98,10 @@ bool IrcClientImpl::createSession() {
 
 bool IrcClientImpl::destroySession() {
     if (session != 0) {
-        sessionToClient.erase(session);
+        irc_cmd_quit(session, 0);
+        runThread.join();
         irc_destroy_session(session);
+        sessionToClient.erase(session);
     }
     session = 0;
 }
@@ -108,6 +111,11 @@ std::string IrcClientImpl::getConnectionId() {
 
 bool IrcClientImpl::disconnect() {
     destroySession();
+}
+
+void IrcClientImpl::displayError() {
+    int errorNo = irc_errno(session);
+    cerr << "IRC Error #" << errorNo << ": " << irc_strerror(errorNo) << endl;
 }
 
 bool IrcClientImpl::connect() {
@@ -127,9 +135,17 @@ bool IrcClientImpl::connect() {
     const char* nick = serverData.aliasset.front().c_str(); // use first alias
 
     int result = irc_connect(session, host.c_str(), serverData.port, password, nick, 0 /* HIDE */, 0 /* HIDE */);
-    if (result == 0) return true; // wait for event_connect
+    if (result != 0) {
+        displayError();
+        disconnect();
+        return false;
+    }
 
-    disconnect();
+    // wait for event_connect
+    runThread = thread([&] {
+        runResult = irc_run(session);
+    });
+
     return false;
 }
 

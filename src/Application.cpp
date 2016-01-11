@@ -39,14 +39,15 @@ int Application::run() {
         auto it = userHandlers.emplace(piecewise_construct, forward_as_tuple(userData.userId), forward_as_tuple(userData, databaseHandler));
         UserHandler& userHandler = it.first->second;
 
-        for (auto serverData : databaseHandler.getAutoConnectServers(userData.userId)) {
-            IrcClient* client = userHandler.connect(serverData);
-            if (!client) continue;
-        }
+        for (auto serverData : databaseHandler.getAutoConnectServers(userData.userId))
+            userHandler.connect(serverData);
     }
 
-    for (int i = 0; i < 5; ++i) {
-        sleep(1);
+    sleep(5); // TODO: Running only 5 seconds till disconnect for debugging purposes
+
+    for (auto p : userHandlers) {
+        UserHandler& userHandler = p.second;
+        userHandler.disconnect();
     }
     // Read IRC configuration from database
 

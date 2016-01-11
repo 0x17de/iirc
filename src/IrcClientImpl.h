@@ -9,8 +9,10 @@
 #include <unordered_map>
 #include <string>
 #include <list>
+#include <thread>
 
 #include <libircclient.h>
+#include <thread>
 #include "UserHandler.h"
 #include "IrcEvent.h"
 
@@ -23,6 +25,8 @@ public:
     ServerData serverData;
     irc_callbacks_t callbacks;
     irc_session_t* session;
+    std::thread runThread;
+    int runResult;
 
 private:
     bool createSession();
@@ -38,6 +42,7 @@ public:
     template <IrcEvent> void onEvent(const char * event, const char * origin, const char ** params, unsigned int count);
     std::string getConnectionId();
     bool disconnect();
+    void displayError();
     bool connect();
     void join(const char* channel, const char* key);
 };

@@ -18,6 +18,7 @@ public:
     IrcClient(UserHandler& userHandler, const ServerData& serverData);
     size_t getServerId();
     bool connect();
+    void disconnect();
     void join(const char* channel, const char* key);
 };
 

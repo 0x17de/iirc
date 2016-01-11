@@ -226,8 +226,8 @@ std::list<ServerData> DatabaseHandler::getAutoConnectServers(size_t userId) {
     std::string realnames;
     int autoconnect;
 
-    statement st = (sqlSession->prepare << "SELECT server_id, host, port, password, servername, aliasset_id, realnames, autoconnect FROM " << serverTableName << " WHERE user_id = :userId",
-            into(serverId), into(host), into(port), into(password, password_ind), into(servername), into(aliasset_id), into(realnames), into(autoconnect), use(userId));
+    statement st = (sqlSession->prepare << "SELECT server_id, host, port, ssl, password, servername, aliasset_id, realnames, autoconnect FROM " << serverTableName << " WHERE user_id = :userId",
+            into(serverId), into(host), into(port), into(ssl), into(password, password_ind), into(servername), into(aliasset_id), into(realnames), into(autoconnect), use(userId));
     st.execute();
 
     while (st.fetch()) {

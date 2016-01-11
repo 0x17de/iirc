@@ -19,6 +19,10 @@ bool IrcClient::connect() {
     return impl->connect();
 }
 
+void IrcClient::disconnect() {
+    impl->disconnect();
+}
+
 void IrcClient::join(const char* channel, const char* key) {
     impl->join(channel, key);
 }

@@ -1,4 +1,5 @@
 #include "UserHandler.h"
+#include <iostream>
 
 
 using namespace std;
@@ -15,15 +16,17 @@ UserHandler::UserHandler(const UserData& userData, DatabaseHandler& databaseHand
 
 }
 
-IrcClient* UserHandler::connect(const ServerData& serverData) {
+void UserHandler::connect(const ServerData& serverData) {
     auto it = ircClients.find(serverData.serverId);
-    if (it != ircClients.end()) return &it->second; // already connected
+    if (it != ircClients.end()) return; // already connected
 
-    auto jt = ircClients.emplace(piecewise_construct, forward_as_tuple(serverData.serverId), forward_as_tuple(*this, serverData));
+    auto jt = ircClients.emplace(piecewise_construct, forward_as_tuple(serverData.serverId),
+                                 forward_as_tuple(*this, serverData));
     IrcClient &ircClient = jt.first->second;
-    ircClient.connect();
-
-    return &ircClient;
+    if (ircClient.connect() != 0) {
+        cerr << "Error connecting to IRC server." << endl;
+        return;
+    }
 }
 
 const UserData &UserHandler::getUserData() {
@@ -32,4 +35,11 @@ const UserData &UserHandler::getUserData() {
 
 IrcClient& UserHandler::get(size_t serverId) {
     return ircClients.at(serverId);
+}
+
+void UserHandler::disconnect() {
+    for (auto p : ircClients) {
+        IrcClient& client = p.second;
+        client.disconnect();
+    }
 }

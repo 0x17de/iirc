@@ -19,7 +19,8 @@ class UserHandler {
 public:
     UserHandler(const UserData& userData, DatabaseHandler& databaseHandler);
     const UserData& getUserData();
-    IrcClient* connect(const ServerData& serverData);
+    void connect(const ServerData& serverData);
+    void disconnect();
     IrcClient& get(size_t serverId);
 
     template<IrcEvent>
