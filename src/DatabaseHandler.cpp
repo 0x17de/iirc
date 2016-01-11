@@ -97,7 +97,7 @@ bool DatabaseHandler::upgradeDatabase(std::string fromVersion, std::string toVer
 
     // Upgrades are listed in order
     if (fromVersion == "xxxxxxxx-x") {// drop all databases
-        cerr << "Old databases are droped." << endl;
+        cerr << "Old databases are to be dropped." << endl;
 #define TRYDROP(name) \
         sqlSession->once << "SELECT * FROM information_schema.tables WHERE table_name = :" #name "TableName LIMIT 1", use(name ## TableName); \
         if (sqlSession->got_data()) sqlSession->once << "DROP TABLE " << name ## TableName;
