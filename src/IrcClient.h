@@ -3,6 +3,8 @@
 
 
 #include <memory>
+#include <string>
+#include <list>
 
 
 
@@ -14,7 +16,9 @@ class IrcClient {
 
 public:
     IrcClient(UserHandler& userHandler, const ServerData& serverData);
+    size_t getServerId();
     bool connect();
+    void join(const char* channel, const char* key);
 };
 
 

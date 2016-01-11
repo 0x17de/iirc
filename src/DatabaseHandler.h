@@ -7,6 +7,7 @@
 #include <list>
 #include "data/UserData.h"
 #include "data/ServerData.h"
+#include "data/ChannelData.h"
 
 
 namespace soci {
@@ -46,6 +47,7 @@ public:
 
     std::list<UserData> getUserData();
     std::list<ServerData> getAutoConnectServers(size_t userId);
+    std::list<ChannelData> getAutoJoinChannels(size_t serverId);
 };
 
 

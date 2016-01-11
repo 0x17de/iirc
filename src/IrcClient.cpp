@@ -8,9 +8,17 @@ using namespace std;
 
 
 
-IrcClient::IrcClient(UserHandler& userHandler, const ServerData& serverData) : impl(make_shared<IrcClientImpl>(userHandler, serverData)){
+IrcClient::IrcClient(UserHandler& userHandler, const ServerData& serverData) : impl(make_shared<IrcClientImpl>(*this, userHandler, serverData)){
+}
+
+size_t IrcClient::getServerId() {
+    return impl->serverData.serverId;
 }
 
 bool IrcClient::connect() {
     return impl->connect();
+}
+
+void IrcClient::join(const char* channel, const char* key) {
+    impl->join(channel, key);
 }

@@ -27,43 +27,60 @@ static inline void onEvent(irc_session_t * session, const char * event, const ch
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Unknown>(const char *event, const char *origin, const char **params, unsigned int count) {
-
+    cout << "EVENT UNKNOWN" << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Connect>(const char *event, const char *origin, const char **params, unsigned int count) {
-
+    cout << "EVENT CONNECT" << endl;
+    userHandler.onEvent<IrcEvent::Connect>(client);
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Quit>(const char *event, const char *origin, const char **params, unsigned int count) {
-
+    cout << "EVENT QUIT" << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Channel>(const char *event, const char *origin, const char **params, unsigned int count) {
-
+    cout << "EVENT CHANNEL" << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::PrivMsg>(const char *event, const char *origin, const char **params, unsigned int count) {
-
+    cout << "EVENT PRIVMSG" << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origin, const char **params, unsigned int count) {
-
+    cout << "EVENT JOIN" << endl;
 }
 
 
-IrcClientImpl::IrcClientImpl(UserHandler& userHandler, const ServerData& serverData) : userHandler(userHandler), serverData(serverData), callbacks{0}, session{0} {
+IrcClientImpl::IrcClientImpl(IrcClient& client, UserHandler& userHandler, const ServerData& serverData) : client(client), userHandler(userHandler), serverData(serverData), callbacks{0}, session{0} {
     // register various events here
-    callbacks.event_unknown = ::onEvent<IrcEvent::Unknown>;
     callbacks.event_connect = ::onEvent<IrcEvent::Connect>;
+    callbacks.event_nick;
     callbacks.event_quit = ::onEvent<IrcEvent::Quit>;
+    callbacks.event_join = ::onEvent<IrcEvent::Join>;
+    callbacks.event_part;
+    callbacks.event_mode;
+    callbacks.event_umode;
+    callbacks.event_topic;
+    callbacks.event_kick;
     callbacks.event_channel = ::onEvent<IrcEvent::Channel>;
     callbacks.event_privmsg = ::onEvent<IrcEvent::PrivMsg>;
-    callbacks.event_join = ::onEvent<IrcEvent::Join>;
+    callbacks.event_notice;
+    callbacks.event_channel_notice;
+    callbacks.event_invite;
+    callbacks.event_ctcp_req;
+    callbacks.event_ctcp_rep;
+    callbacks.event_ctcp_action;
+    callbacks.event_unknown = ::onEvent<IrcEvent::Unknown>;
+
+    /* irc_eventcode_callback_t.event_numeric;
+    irc_event_dcc_chat_t.event_dcc_chat_req;
+    irc_event_dcc_send_t.event_dcc_send_req; */
 }
 
 IrcClientImpl::~IrcClientImpl() {
@@ -73,7 +90,9 @@ IrcClientImpl::~IrcClientImpl() {
 bool IrcClientImpl::createSession() {
     if (session != 0) return false; // already created
     session = irc_create_session(&callbacks);
-    return session != 0;
+    if (session == 0) return false;
+    sessionToClient.emplace(session, this);
+    return true;
 }
 
 bool IrcClientImpl::destroySession() {
@@ -96,7 +115,6 @@ bool IrcClientImpl::connect() {
         cerr << "Could not create IRC session for connection '" << getConnectionId() << "'." << endl;
         return false;
     }
-    sessionToClient.emplace(session, this);
 
     if (serverData.aliasset.empty() == 0) {
         cerr << "The aliasset is empty for connection  '" << getConnectionId() << "'." << endl;
@@ -113,4 +131,8 @@ bool IrcClientImpl::connect() {
 
     disconnect();
     return false;
+}
+
+void IrcClientImpl::join(const char* channel, const char* key) {
+    irc_cmd_join(session, channel, key);
 }

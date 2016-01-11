@@ -12,8 +12,8 @@
 
 
 const std::string sqlMetamodelVersion = "20160110-0";
-const bool forceDropDatabases = false;
-const bool forceAddDemoContent = false;
+const bool forceDropDatabases = true;
+const bool forceAddDemoContent = true;
 
 
 

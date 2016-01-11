@@ -6,6 +6,7 @@
 #include "soci/postgresql/soci-postgresql.h"
 
 #include "config/db.h"
+#include "data/ChannelData.h"
 
 
 using namespace std;
@@ -95,7 +96,8 @@ bool DatabaseHandler::upgradeDatabase(std::string fromVersion, std::string toVer
     cerr << "Database schema will be upgraded." << endl;
 
     // Upgrades are listed in order
-    UPGRADE("xxxxxxxx-x", "00000000-0") // drop all databases
+    if (fromVersion == "xxxxxxxx-x") {// drop all databases
+        cerr << "Old databases are droped." << endl;
 #define TRYDROP(name) \
         sqlSession->once << "SELECT * FROM information_schema.tables WHERE table_name = :" #name "TableName LIMIT 1", use(name ## TableName); \
         if (sqlSession->got_data()) sqlSession->once << "DROP TABLE " << name ## TableName;
@@ -109,14 +111,16 @@ bool DatabaseHandler::upgradeDatabase(std::string fromVersion, std::string toVer
         TRYDROP(user);
         TRYDROP(nick);
 #undef TRYDROP
-    ENDUPGRADE()
+        fromVersion = "00000000-0";
+        cerr << "Drop operation finished." << endl;
+    }
     UPGRADE("dddddddd-d", toVersion) // create demo content
         sqlSession->once << "INSERT INTO " << userTableName << " (user_id, username, password) VALUES (1, 'it', 'it')";
         sqlSession->once << "INSERT INTO " << aliassetTableName << " (aliasset_id, user_id, title) VALUES (1, 1, 'idvUsers')";
         sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'idv')";
         sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'idv_')";
         sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'idv__')";
-        sqlSession->once << "INSERT INTO " << serverTableName << " (server_id, user_id, host, port, password, servername, aliasset_id, realnames, autoconnect) VALUES (1, 1, 'localhost', 6667, null, 'localhost', 1, 'iirc iirc_ iirc__', true)";
+        sqlSession->once << "INSERT INTO " << serverTableName << " (server_id, user_id, host, port, ssl, password, servername, aliasset_id, realnames, autoconnect) VALUES (1, 1, 'localhost', 6667, false, null, 'localhost', 1, 'iirc iirc_ iirc__', true)";
         sqlSession->once << "INSERT INTO " << channelTableName << " (channel_id, user_id, server_id, name, type, lastread, autojoin) VALUES (1, 1, 1, 'test', 1, 0, true)";
         sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, time, type, flags, sender_id, message) VALUES (1, '2015-01-01 01:00:00', 0, 0, 1, 'testmessage1')";
         sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, time, type, flags, sender_id, message) VALUES (1, '2015-01-01 02:00:00', 0, 0, 1, 'testmessage2')";
@@ -133,7 +137,7 @@ bool DatabaseHandler::upgradeDatabase(std::string fromVersion, std::string toVer
         sqlSession->once << "CREATE TABLE " << userTableName << " (user_id serial, username text, password text)";
         sqlSession->once << "CREATE TABLE " << nickTableName << " (nick_id serial, nick text)";
 
-        sqlSession->once << "INSERT INTO " << configTableName << " (key, value) VALUES ('version', '00000000-0)"; // will be updated in ENDUPGRADE()
+        sqlSession->once << "INSERT INTO " << configTableName << " (key, value) VALUES ('version', '00000000-0')"; // will be updated in ENDUPGRADE()
     ENDUPGRADE()
 
     // Check if upgrade did completely finish
@@ -240,6 +244,33 @@ std::list<ServerData> DatabaseHandler::getAutoConnectServers(size_t userId) {
         ASSIGN(aliasset_id);
         ASSIGN(realnames);
         ASSIGN(autoconnect);
+
+#undef ASSIGN
+    }
+
+    return result;
+}
+
+std::list<ChannelData> DatabaseHandler::getAutoJoinChannels(size_t serverId) {
+    using namespace soci;
+
+    list<ChannelData> result;
+
+    size_t channelId;
+    string name;
+
+    statement st = (sqlSession->prepare << "SELECT channel_id, name FROM " << serverTableName << " WHERE server_id = :serverId",
+            into(channelId), into(name), use(serverId));
+    st.execute();
+
+    while (st.fetch()) {
+        result.emplace_back();
+        ChannelData& channelData = result.back();
+#define ASSIGN(name) \
+        channelData.name = name
+
+        ASSIGN(channelId);
+        ASSIGN(name);
 
 #undef ASSIGN
     }

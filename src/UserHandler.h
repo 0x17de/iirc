@@ -5,18 +5,25 @@
 #include <stddef.h>
 #include <unordered_map>
 #include "IrcClient.h"
+#include "IrcEvent.h"
 #include "data/UserData.h"
 #include "data/ServerData.h"
+#include "DatabaseHandler.h"
 
 
 class UserHandler {
     UserData userData;
+    DatabaseHandler& databaseHandler;
     std::unordered_map<size_t, IrcClient> ircClients;
 
 public:
-    UserHandler(const UserData& userData);
+    UserHandler(const UserData& userData, DatabaseHandler& databaseHandler);
     const UserData& getUserData();
-    bool connect(const ServerData& serverData);
+    IrcClient* connect(const ServerData& serverData);
+    IrcClient& get(size_t serverId);
+
+    template<IrcEvent>
+    void onEvent(IrcClient& client);
 };
 
 
