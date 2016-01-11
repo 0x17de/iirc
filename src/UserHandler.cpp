@@ -16,17 +16,18 @@ UserHandler::UserHandler(const UserData& userData, DatabaseHandler& databaseHand
 
 }
 
-void UserHandler::connect(const ServerData& serverData) {
+bool UserHandler::connect(const ServerData& serverData) {
     auto it = ircClients.find(serverData.serverId);
-    if (it != ircClients.end()) return; // already connected
+    if (it != ircClients.end()) return true; // already connected
 
     auto jt = ircClients.emplace(piecewise_construct, forward_as_tuple(serverData.serverId),
                                  forward_as_tuple(*this, serverData));
     IrcClient &ircClient = jt.first->second;
-    if (ircClient.connect() != 0) {
+    if (!ircClient.connect()) {
         cerr << "Error connecting to IRC server." << endl;
-        return;
+        return false;
     }
+    return true;
 }
 
 const UserData &UserHandler::getUserData() {

@@ -28,7 +28,7 @@ static inline void onEvent(irc_session_t * session, const char * event, const ch
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Unknown>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT UNKNOWN" << endl;
+    cout << "EVENT UNKNOWN: " << (event?event:"") << " " << (origin?origin:"") << endl;
 }
 
 template <>
@@ -58,30 +58,35 @@ void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origi
 }
 
 
+static inline void onEventNumeric(irc_session_t * session, unsigned int event, const char * origin, const char ** params, unsigned int count) {
+    cerr << "onEventNumeric #" << event << endl;
+}
+
+
 IrcClientImpl::IrcClientImpl(IrcClient& client, UserHandler& userHandler, const ServerData& serverData) : client(client), userHandler(userHandler), serverData(serverData), callbacks{0}, session{0} {
     // register various events here
     callbacks.event_connect = ::onEvent<IrcEvent::Connect>;
-    callbacks.event_nick;
+    callbacks.event_nick = ::onEvent<IrcEvent::Unknown>;
     callbacks.event_quit = ::onEvent<IrcEvent::Quit>;
     callbacks.event_join = ::onEvent<IrcEvent::Join>;
-    callbacks.event_part;
-    callbacks.event_mode;
-    callbacks.event_umode;
-    callbacks.event_topic;
-    callbacks.event_kick;
+    callbacks.event_part = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_mode = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_umode = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_topic = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_kick = ::onEvent<IrcEvent::Unknown>;
     callbacks.event_channel = ::onEvent<IrcEvent::Channel>;
     callbacks.event_privmsg = ::onEvent<IrcEvent::PrivMsg>;
-    callbacks.event_notice;
-    callbacks.event_channel_notice;
-    callbacks.event_invite;
-    callbacks.event_ctcp_req;
-    callbacks.event_ctcp_rep;
-    callbacks.event_ctcp_action;
+    callbacks.event_notice = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_channel_notice = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_invite = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_ctcp_req = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_ctcp_rep = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_ctcp_action = ::onEvent<IrcEvent::Unknown>;
     callbacks.event_unknown = ::onEvent<IrcEvent::Unknown>;
 
-    /* irc_eventcode_callback_t.event_numeric;
-    irc_event_dcc_chat_t.event_dcc_chat_req;
-    irc_event_dcc_send_t.event_dcc_send_req; */
+    callbacks.event_numeric = ::onEventNumeric;
+    //irc_event_dcc_chat_t.event_dcc_chat_req;
+    //irc_event_dcc_send_t.event_dcc_send_req;
 }
 
 IrcClientImpl::~IrcClientImpl() {
@@ -99,9 +104,11 @@ bool IrcClientImpl::createSession() {
 bool IrcClientImpl::destroySession() {
     if (session != 0) {
         irc_cmd_quit(session, 0);
-        runThread.join();
+        if (runThread.joinable())
+            runThread.join();
         irc_destroy_session(session);
         sessionToClient.erase(session);
+        cerr << "RunResult: " << runResult << endl;
     }
     session = 0;
 }
@@ -124,7 +131,7 @@ bool IrcClientImpl::connect() {
         return false;
     }
 
-    if (serverData.aliasset.empty() == 0) {
+    if (serverData.aliasset.empty()) {
         cerr << "The aliasset is empty for connection  '" << getConnectionId() << "'." << endl;
         return false;
     }

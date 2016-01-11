@@ -19,7 +19,7 @@ class UserHandler {
 public:
     UserHandler(const UserData& userData, DatabaseHandler& databaseHandler);
     const UserData& getUserData();
-    void connect(const ServerData& serverData);
+    bool connect(const ServerData& serverData);
     void disconnect();
     IrcClient& get(size_t serverId);
 
