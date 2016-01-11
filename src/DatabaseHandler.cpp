@@ -117,11 +117,11 @@ bool DatabaseHandler::upgradeDatabase(std::string fromVersion, std::string toVer
     UPGRADE("dddddddd-d", toVersion) // create demo content
         sqlSession->once << "INSERT INTO " << userTableName << " (user_id, username, password) VALUES (1, 'it', 'it')";
         sqlSession->once << "INSERT INTO " << aliassetTableName << " (aliasset_id, user_id, title) VALUES (1, 1, 'idvUsers')";
-        sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'idv')";
-        sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'idv_')";
-        sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'idv__')";
+        sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'iircUser')";
+        sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'iircUser_')";
+        sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'iircUser__')";
         sqlSession->once << "INSERT INTO " << serverTableName << " (server_id, user_id, host, port, ssl, password, servername, aliasset_id, realnames, autoconnect) VALUES (1, 1, 'localhost', 6667, false, null, 'localhost', 1, 'iirc iirc_ iirc__', true)";
-        sqlSession->once << "INSERT INTO " << channelTableName << " (channel_id, user_id, server_id, name, type, lastread, autojoin) VALUES (1, 1, 1, 'test', 1, 0, true)";
+        sqlSession->once << "INSERT INTO " << channelTableName << " (channel_id, user_id, server_id, name, type, lastread, autojoin) VALUES (1, 1, 1, '#test', 1, 0, true)";
         sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, time, type, flags, sender_id, message) VALUES (1, '2015-01-01 01:00:00', 0, 0, 1, 'testmessage1')";
         sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, time, type, flags, sender_id, message) VALUES (1, '2015-01-01 02:00:00', 0, 0, 1, 'testmessage2')";
         sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, time, type, flags, sender_id, message) VALUES (1, '2015-01-01 03:00:00', 0, 0, 1, 'testmessage3')";

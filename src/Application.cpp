@@ -1,7 +1,7 @@
 #include "Application.h"
 #include <iostream>
 #include <list>
-#include <unistd.h>
+#include <csignal>
 #include "IniReader.h"
 #include "DatabaseHandler.h"
 #include "UserHandler.h"
@@ -10,8 +10,21 @@
 using namespace std;
 
 
+static sig_atomic_t running = true;
+
+static void sigint(int) {
+    running = false;
+}
+static void sigterm(int) {
+    if (running == false)
+        exit(1);
+    running = false;
+}
 
 int Application::run() {
+    signal(SIGINT, sigint);
+    signal(SIGTERM, sigterm);
+
     // Parse configuration
     IniReader iniReader;
     if (!iniReader.parse("config.ini")) {
@@ -43,12 +56,8 @@ int Application::run() {
             userHandler.connect(serverData);
     }
 
-    sleep(5); // TODO: Running only 5 seconds till disconnect for debugging purposes
+    while(running) {}
 
-    for (auto p : userHandlers) {
-        UserHandler& userHandler = p.second;
-        userHandler.disconnect();
-    }
     // Read IRC configuration from database
 
     // Autologin to configured servers&channels
@@ -56,5 +65,8 @@ int Application::run() {
     // Start websocket server
 
     // IDLE
+
+
+
     return 0;
 }

@@ -28,33 +28,51 @@ static inline void onEvent(irc_session_t * session, const char * event, const ch
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Unknown>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT UNKNOWN: " << (event?event:"") << " " << (origin?origin:"") << endl;
+    cerr << "EVENT UNKNOWN: " << (event?event:"") << " " << (origin?origin:"");
+    for (unsigned int i = 0; i < count; ++i)
+        cerr << " " << params[i];
+    cerr << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Connect>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT CONNECT" << endl;
+    cout << "EVENT CONNECT: " << (event?event:"") << " " << (origin?origin:"");
+    for (unsigned int i = 0; i < count; ++i)
+        cerr << " " << params[i];
+    cerr << endl;
     userHandler.onEvent<IrcEvent::Connect>(client);
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Quit>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT QUIT" << endl;
+    cout << "EVENT QUIT: " << (event?event:"") << " " << (origin?origin:"");
+    for (unsigned int i = 0; i < count; ++i)
+        cerr << " " << params[i];
+    cerr << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Channel>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT CHANNEL" << endl;
+    cout << "EVENT CHANNEL: " << (event?event:"") << " " << (origin?origin:"");
+    for (unsigned int i = 0; i < count; ++i)
+        cerr << " " << params[i];
+    cerr << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::PrivMsg>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT PRIVMSG" << endl;
+    cout << "EVENT PRIVMSG: " << (event?event:"") << " " << (origin?origin:"");
+    for (unsigned int i = 0; i < count; ++i)
+        cerr << " " << params[i];
+    cerr << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT JOIN" << endl;
+    cout << "EVENT JOIN: " << (event?event:"") << " " << (origin?origin:"");
+    for (unsigned int i = 0; i < count; ++i)
+        cerr << " " << params[i];
+    cerr << endl;
 }
 
 
