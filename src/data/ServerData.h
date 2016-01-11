@@ -15,7 +15,6 @@ struct ServerData {
     std::string password;
     std::string servername;
     size_t aliasset_id = 0;
-    std::list<std::string> aliasset;
     std::string realnames;
     bool autoconnect = false;
 };

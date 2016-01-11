@@ -133,7 +133,7 @@ bool DatabaseHandler::upgradeDatabase(std::string fromVersion, std::string toVer
         sqlSession->once << "CREATE TABLE " << channelTableName << " (channel_id serial, user_id integer, server_id integer, name text, type integer, lastread integer, autojoin boolean)";
         sqlSession->once << "CREATE TABLE " << serverTableName << " (server_id serial, user_id integer, host text, port integer, ssl boolean, password text, servername text, aliasset_id integer, realnames text, autoconnect boolean)";
         sqlSession->once << "CREATE TABLE " << aliassetTableName << " (aliasset_id serial, user_id integer, title text)";
-        sqlSession->once << "CREATE TABLE " << aliasTableName << " (alias_id serial, user_id integer, aliasset_id integer, nick text)";
+        sqlSession->once << "CREATE TABLE " << aliasTableName << " (alias_id serial, aliasset_id integer, nick text)";
         sqlSession->once << "CREATE TABLE " << userTableName << " (user_id serial, username text, password text)";
         sqlSession->once << "CREATE TABLE " << nickTableName << " (nick_id serial, nick text)";
 
@@ -197,6 +197,35 @@ std::list<UserData> DatabaseHandler::getUserData() {
     while (st.fetch()) {
         result.emplace_back();
         UserData& userData = result.back();
+
+        {
+            size_t aliasId;
+            size_t aliassetId;
+            string nick;
+
+            statement stNicks = (sqlSession->prepare << "SELECT alias_id, " << aliasTableName << ".aliasset_id, nick FROM " << aliasTableName <<
+                                 ", " << aliassetTableName << " WHERE " << aliasTableName << ".aliasset_id = " << aliassetTableName << ".aliasset_id AND user_id = :userId",
+                    into(aliasId), into(aliassetId), into(nick), use(userId));
+            stNicks.execute();
+
+            while (stNicks.fetch()) {
+                list<NickData> *nickDataList;
+                auto it = userData.aliasSets.find(aliassetId);
+                if (it != userData.aliasSets.end()) {
+                    nickDataList = &it->second;
+                } else {
+                    auto jt = userData.aliasSets.emplace(piecewise_construct, forward_as_tuple(aliassetId),
+                                                         forward_as_tuple());
+                    nickDataList = &jt.first->second;
+                }
+                nickDataList->emplace_back();
+                NickData &nickData = nickDataList->back();
+                nickData.aliasId = aliasId;
+                nickData.aliassetId = aliassetId;
+                nickData.nick = nick;
+            }
+        }
+
 #define ASSIGN(name) \
         userData.name = name
 
@@ -259,7 +288,7 @@ std::list<ChannelData> DatabaseHandler::getAutoJoinChannels(size_t serverId) {
     size_t channelId;
     string name;
 
-    statement st = (sqlSession->prepare << "SELECT channel_id, name FROM " << serverTableName << " WHERE server_id = :serverId",
+    statement st = (sqlSession->prepare << "SELECT channel_id, name FROM " << channelTableName << " WHERE server_id = :serverId",
             into(channelId), into(name), use(serverId));
     st.execute();
 

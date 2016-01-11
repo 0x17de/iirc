@@ -63,7 +63,7 @@ static inline void onEventNumeric(irc_session_t * session, unsigned int event, c
 }
 
 
-IrcClientImpl::IrcClientImpl(IrcClient& client, UserHandler& userHandler, const ServerData& serverData) : client(client), userHandler(userHandler), serverData(serverData), callbacks{0}, session{0} {
+IrcClientImpl::IrcClientImpl(IrcClient& client, UserHandler& userHandler, const ServerData& serverData) : client(client), userHandler(userHandler), serverData(serverData), callbacks{0}, session{0}, runResult{0} {
     // register various events here
     callbacks.event_connect = ::onEvent<IrcEvent::Connect>;
     callbacks.event_nick = ::onEvent<IrcEvent::Unknown>;
@@ -131,15 +131,19 @@ bool IrcClientImpl::connect() {
         return false;
     }
 
-    if (serverData.aliasset.empty()) {
-        cerr << "The aliasset is empty for connection  '" << getConnectionId() << "'." << endl;
+    auto aliasIt = userHandler.getUserData().aliasSets.find(serverData.aliasset_id);
+    if (aliasIt == userHandler.getUserData().aliasSets.end()) {
+        cerr << "The aliasset for connection '" << getConnectionId() << "' was not found." << endl;
+        return false;
+    } else if (aliasIt->second.empty()) {
+        cerr << "The aliasset for connection '" << getConnectionId() << "' is empty." << endl;
         return false;
     }
 
     string host = serverData.host;
     if (serverData.ssl) host = '#' + host;
     const char* password = serverData.password.empty() ? 0 : serverData.password.c_str(); // if no password supply 0
-    const char* nick = serverData.aliasset.front().c_str(); // use first alias
+    const char* nick = aliasIt->second.front().nick.c_str(); // use first alias
 
     int result = irc_connect(session, host.c_str(), serverData.port, password, nick, 0 /* HIDE */, 0 /* HIDE */);
     if (result != 0) {
@@ -153,7 +157,7 @@ bool IrcClientImpl::connect() {
         runResult = irc_run(session);
     });
 
-    return false;
+    return true;
 }
 
 void IrcClientImpl::join(const char* channel, const char* key) {
