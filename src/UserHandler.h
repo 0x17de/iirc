@@ -19,12 +19,15 @@ class UserHandler {
 public:
     UserHandler(const UserData& userData, DatabaseHandler& databaseHandler);
     const UserData& getUserData();
+    DatabaseHandler& getDatabaseHandler();
     bool connect(const ServerData& serverData);
     void disconnect();
     IrcClient& get(size_t serverId);
 
+    static std::string splitNickFromIdentifier(const std::string identifier);
+
     template<IrcEvent>
-    void onEvent(IrcClient& client);
+    void onEvent(IrcClient& client, const char *event, const char *origin, const char **params, unsigned int count);
 };
 
 

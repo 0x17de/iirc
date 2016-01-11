@@ -10,6 +10,7 @@ struct ChannelData {
     size_t channelId = 0;
     std::string name;
     std::string key;
+    bool autojoin;
 };
 
 

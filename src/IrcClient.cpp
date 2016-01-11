@@ -15,6 +15,21 @@ size_t IrcClient::getServerId() {
     return impl->serverData.serverId;
 }
 
+size_t IrcClient::getChannelId(const std::string &channelName) {
+    size_t result;
+
+    auto it = impl->joinedChannels.find(channelName);
+    if (it == impl->joinedChannels.end())
+        result = 0;
+    else
+        result = it->second;
+
+    if (result == 0) // lookup in database
+        result = impl->userHandler.getDatabaseHandler().getOrCreateChannelId(getServerId(), channelName);
+
+    return result;
+}
+
 bool IrcClient::connect() {
     return impl->connect();
 }

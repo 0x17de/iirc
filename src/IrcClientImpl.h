@@ -10,6 +10,7 @@
 #include <string>
 #include <list>
 #include <thread>
+#include <map>
 
 #include <libircclient.h>
 #include <thread>
@@ -27,6 +28,7 @@ public:
     irc_session_t* session;
     std::thread runThread;
     int runResult;
+    std::map<std::string, size_t> joinedChannels;
 
 private:
     bool createSession();

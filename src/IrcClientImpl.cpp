@@ -39,7 +39,7 @@ void IrcClientImpl::onEvent<IrcEvent::Connect>(const char *event, const char *or
     for (unsigned int i = 0; i < count; ++i)
         cerr << " " << params[i];
     cerr << endl;
-    userHandler.onEvent<IrcEvent::Connect>(client);
+    userHandler.onEvent<IrcEvent::Connect>(client, event, origin, params, count);
 }
 
 template <>
@@ -48,6 +48,8 @@ void IrcClientImpl::onEvent<IrcEvent::Quit>(const char *event, const char *origi
     for (unsigned int i = 0; i < count; ++i)
         cerr << " " << params[i];
     cerr << endl;
+    joinedChannels.clear();
+    userHandler.onEvent<IrcEvent::Quit>(client, event, origin, params, count);
 }
 
 template <>
@@ -56,6 +58,7 @@ void IrcClientImpl::onEvent<IrcEvent::Channel>(const char *event, const char *or
     for (unsigned int i = 0; i < count; ++i)
         cerr << " " << params[i];
     cerr << endl;
+    userHandler.onEvent<IrcEvent::Channel>(client, event, origin, params, count);
 }
 
 template <>
@@ -64,6 +67,7 @@ void IrcClientImpl::onEvent<IrcEvent::PrivMsg>(const char *event, const char *or
     for (unsigned int i = 0; i < count; ++i)
         cerr << " " << params[i];
     cerr << endl;
+    userHandler.onEvent<IrcEvent::PrivMsg>(client, event, origin, params, count);
 }
 
 template <>
@@ -72,6 +76,23 @@ void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origi
     for (unsigned int i = 0; i < count; ++i)
         cerr << " " << params[i];
     cerr << endl;
+    for (unsigned int i = 0; i < count; ++i) {
+        auto it = joinedChannels.find(params[0]);
+        if (it == joinedChannels.end())
+            joinedChannels.emplace(params[0], 0 /* lookup id in DB */);
+    }
+    userHandler.onEvent<IrcEvent::Join>(client, event, origin, params, count);
+}
+
+template <>
+void IrcClientImpl::onEvent<IrcEvent::Part>(const char *event, const char *origin, const char **params, unsigned int count) {
+    cout << "EVENT JOIN: " << (event?event:"") << " " << (origin?origin:"");
+    for (unsigned int i = 0; i < count; ++i)
+        cerr << " " << params[i];
+    cerr << endl;
+    for (unsigned int i = 0; i < count; ++i)
+        joinedChannels.erase(params[i]);
+    userHandler.onEvent<IrcEvent::Part>(client, event, origin, params, count);
 }
 
 
@@ -93,7 +114,7 @@ IrcClientImpl::IrcClientImpl(IrcClient& client, UserHandler& userHandler, const 
     callbacks.event_nick = ::onEvent<IrcEvent::Unknown>;
     callbacks.event_quit = ::onEvent<IrcEvent::Quit>;
     callbacks.event_join = ::onEvent<IrcEvent::Join>;
-    callbacks.event_part = ::onEvent<IrcEvent::Unknown>;
+    callbacks.event_part = ::onEvent<IrcEvent::Part>;
     callbacks.event_mode = ::onEvent<IrcEvent::Unknown>;
     callbacks.event_umode = ::onEvent<IrcEvent::Unknown>;
     callbacks.event_topic = ::onEvent<IrcEvent::Unknown>;

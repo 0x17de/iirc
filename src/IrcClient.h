@@ -7,7 +7,6 @@
 #include <list>
 
 
-
 class UserHandler;
 class ServerData;
 class IrcClientImpl;
@@ -17,6 +16,7 @@ class IrcClient {
 public:
     IrcClient(UserHandler& userHandler, const ServerData& serverData);
     size_t getServerId();
+    size_t getChannelId(const std::string& channelName);
     bool connect();
     void disconnect();
     void join(const char* channel, const char* key);

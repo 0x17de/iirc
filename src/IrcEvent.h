@@ -9,6 +9,7 @@ enum class IrcEvent {
     Quit,
     Channel,
     Join,
+    Part,
     PrivMsg
 };
 

@@ -115,13 +115,14 @@ bool DatabaseHandler::upgradeDatabase(std::string fromVersion, std::string toVer
         cerr << "Drop operation finished." << endl;
     }
     UPGRADE("dddddddd-d", toVersion) // create demo content
-        sqlSession->once << "INSERT INTO " << userTableName << " (user_id, username, password) VALUES (1, 'it', 'it')";
-        sqlSession->once << "INSERT INTO " << aliassetTableName << " (aliasset_id, user_id, title) VALUES (1, 1, 'idvUsers')";
+        sqlSession->once << "INSERT INTO " << userTableName << " (username, password) VALUES ('it', 'it')";
+        sqlSession->once << "INSERT INTO " << aliassetTableName << " (user_id, title) VALUES (1, 'idvUsers')";
         sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'iircUser')";
         sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'iircUser_')";
         sqlSession->once << "INSERT INTO " << aliasTableName << " (aliasset_id, nick) VALUES (1, 'iircUser__')";
-        sqlSession->once << "INSERT INTO " << serverTableName << " (server_id, user_id, host, port, ssl, password, servername, aliasset_id, realnames, autoconnect) VALUES (1, 1, 'localhost', 6667, false, null, 'localhost', 1, 'iirc iirc_ iirc__', true)";
-        sqlSession->once << "INSERT INTO " << channelTableName << " (channel_id, user_id, server_id, name, type, lastread, autojoin) VALUES (1, 1, 1, '#test', 1, 0, true)";
+        sqlSession->once << "INSERT INTO " << serverTableName << " (user_id, host, port, ssl, password, servername, aliasset_id, realnames, autoconnect) VALUES (1, 'localhost', 6667, false, null, 'localhost', 1, 'iirc iirc_ iirc__', true)";
+        sqlSession->once << "INSERT INTO " << channelTableName << " (server_id, name, lastread, autojoin) VALUES (1, '#test', 0, true)";
+        sqlSession->once << "INSERT INTO " << channelTableName << " (server_id, name, lastread, autojoin) VALUES (1, '#noautologin', 0, false)";
         sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, time, type, flags, sender_id, message) VALUES (1, '2015-01-01 01:00:00', 0, 0, 1, 'testmessage1')";
         sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, time, type, flags, sender_id, message) VALUES (1, '2015-01-01 02:00:00', 0, 0, 1, 'testmessage2')";
         sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, time, type, flags, sender_id, message) VALUES (1, '2015-01-01 03:00:00', 0, 0, 1, 'testmessage3')";
@@ -130,7 +131,7 @@ bool DatabaseHandler::upgradeDatabase(std::string fromVersion, std::string toVer
     UPGRADE("00000000-0", toVersion) // create from scratch revision
         sqlSession->once << "CREATE TABLE " << configTableName << " (id serial, key varchar(80), value text)";
         sqlSession->once << "CREATE TABLE " << backlogTableName << " (msg_id serial, channel_id integer, time timestamp, type integer, flags integer, sender_id integer, message text)";
-        sqlSession->once << "CREATE TABLE " << channelTableName << " (channel_id serial, user_id integer, server_id integer, name text, type integer, lastread integer, autojoin boolean)";
+        sqlSession->once << "CREATE TABLE " << channelTableName << " (channel_id serial, server_id integer, name text, key text, lastread integer, autojoin boolean)";
         sqlSession->once << "CREATE TABLE " << serverTableName << " (server_id serial, user_id integer, host text, port integer, ssl boolean, password text, servername text, aliasset_id integer, realnames text, autoconnect boolean)";
         sqlSession->once << "CREATE TABLE " << aliassetTableName << " (aliasset_id serial, user_id integer, title text)";
         sqlSession->once << "CREATE TABLE " << aliasTableName << " (alias_id serial, aliasset_id integer, nick text)";
@@ -255,7 +256,7 @@ std::list<ServerData> DatabaseHandler::getAutoConnectServers(size_t userId) {
     std::string realnames;
     int autoconnect;
 
-    statement st = (sqlSession->prepare << "SELECT server_id, host, port, ssl, password, servername, aliasset_id, realnames, autoconnect FROM " << serverTableName << " WHERE user_id = :userId",
+    statement st = (sqlSession->prepare << "SELECT server_id, host, port, ssl, password, servername, aliasset_id, realnames, autoconnect FROM " << serverTableName << " WHERE user_id = :userId AND autoconnect = true",
             into(serverId), into(host), into(port), into(ssl), into(password, password_ind), into(servername), into(aliasset_id), into(realnames), into(autoconnect), use(userId));
     st.execute();
 
@@ -287,8 +288,10 @@ std::list<ChannelData> DatabaseHandler::getAutoJoinChannels(size_t serverId) {
 
     size_t channelId;
     string name;
+    string key;
+    int autojoin;
 
-    statement st = (sqlSession->prepare << "SELECT channel_id, name FROM " << channelTableName << " WHERE server_id = :serverId",
+    statement st = (sqlSession->prepare << "SELECT channel_id, name, key, autojoin FROM " << channelTableName << " WHERE server_id = :serverId AND autojoin = true",
             into(channelId), into(name), use(serverId));
     st.execute();
 
@@ -300,9 +303,47 @@ std::list<ChannelData> DatabaseHandler::getAutoJoinChannels(size_t serverId) {
 
         ASSIGN(channelId);
         ASSIGN(name);
+        ASSIGN(key);
+        ASSIGN(autojoin);
 
 #undef ASSIGN
     }
 
     return result;
+}
+
+size_t DatabaseHandler::getOrCreateChannelId(size_t serverId, const std::string &channelName) {
+    using namespace soci;
+
+    size_t channelId;
+    statement st = (sqlSession->prepare << "SELECT channel_id FROM " << channelTableName << " WHERE server_id = :serverId AND name = :channelName LIMIT 1", into(channelId), use(serverId), use(channelName));
+    st.execute();
+    if (!st.fetch())
+        sqlSession->once << "INSERT INTO " << channelTableName << " (server_id, name) VALUES (:serverId, :channelName)", use(serverId), use(channelName);
+    st.execute();
+    if (!st.fetch())
+        channelId = 0;
+
+    return channelId;
+}
+
+size_t DatabaseHandler::getOrCreateSenderId(const std::string &senderNick) {
+    using namespace soci;
+
+    size_t senderId;
+    statement st = (sqlSession->prepare << "SELECT nick_id FROM " << nickTableName << " WHERE nick = :senderNick LIMIT 1", into(senderId), use(senderNick));
+    st.execute();
+    if (!st.fetch())
+        sqlSession->once << "INSERT INTO " << nickTableName << " (nick) VALUES (:senderNick)", use(senderNick);
+    st.execute();
+    if (!st.fetch())
+        senderId = 0;
+
+    return senderId;
+}
+
+size_t DatabaseHandler::storeMessage(size_t senderId, size_t channelId, std::string &message) {
+    using namespace soci;
+
+    sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, sender_id, message, time) VALUES (:channelId, :senderId, :message, NOW())", use(channelId), use(senderId), use(message);
 }
