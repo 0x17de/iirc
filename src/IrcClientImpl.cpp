@@ -76,7 +76,14 @@ void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origi
 
 
 static inline void onEventNumeric(irc_session_t * session, unsigned int event, const char * origin, const char ** params, unsigned int count) {
-    cerr << "onEventNumeric #" << event << endl;
+    cerr << "#";
+    cerr.fill('0');
+    cerr.width(3);
+    cerr << event;
+    cerr << ": " << (origin?origin:"");
+    for (unsigned int i = 0; i < count; ++i)
+        cerr << " " << params[i];
+    cerr << endl;
 }
 
 
