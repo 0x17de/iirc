@@ -4,8 +4,8 @@
 
 #include <stddef.h>
 #include <unordered_map>
-#include "IrcClient.h"
-#include "IrcEvent.h"
+#include "irc/IrcClient.h"
+#include "irc/IrcEvent.h"
 #include "data/UserData.h"
 #include "data/ServerData.h"
 #include "DatabaseHandler.h"
