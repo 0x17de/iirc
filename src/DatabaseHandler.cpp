@@ -232,7 +232,6 @@ std::list<UserData> DatabaseHandler::getUserData() {
 
         ASSIGN(userId);
         ASSIGN(username);
-        ASSIGN(password);
 
 #undef ASSIGN
     }

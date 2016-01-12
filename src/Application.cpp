@@ -4,6 +4,7 @@
 #include <csignal>
 #include <unistd.h>
 #include <thread>
+#include <map>
 #include "IniReader.h"
 #include "DatabaseHandler.h"
 #include "UserHandler.h"
@@ -56,10 +57,10 @@ int Application::run() {
     }
 
     // Initialize users
-    std::list<UserHandler> userHandlers;
+    std::map<size_t, UserHandler> userHandlers;
     for (auto userData : databaseHandler.getUserData()) {
-        userHandlers.emplace_back(userData, databaseHandler);
-        UserHandler& userHandler = userHandlers.back();
+        auto it = userHandlers.emplace(piecewise_construct, forward_as_tuple(userData.userId), forward_as_tuple(userData, databaseHandler));
+        UserHandler& userHandler = it.first->second;
 
         for (auto serverData : databaseHandler.getAutoConnectServers(userData.userId))
             userHandler.connect(serverData);
@@ -80,9 +81,6 @@ int Application::run() {
 
     tcpInterface.stop();
     tcpThread.join();
-
-    for (auto userHandler : userHandlers) // if tcp client is broken stop other threads
-        userHandler.disconnect();
 
     return 0;
 }

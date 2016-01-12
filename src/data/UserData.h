@@ -16,7 +16,7 @@ struct NickData {
 struct UserData {
     size_t userId;
     std::string username;
-    std::string password;
+    // check password against database - dont put it in here
     std::map<int, std::list<NickData>> aliasSets;
 };
 
