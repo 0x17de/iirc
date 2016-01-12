@@ -37,14 +37,12 @@ int Application::run() {
     signal(SIGTERM, sigterm);
 
     // Parse configuration
-    IniReader iniReader;
     if (!iniReader.parse("config.ini")) {
         cerr << "Could not parse configuration." << endl;
         return 1;
     }
 
     // Connect to database
-    DatabaseHandler databaseHandler;
     databaseHandler.configure(iniReader);
     if (!databaseHandler.connect()) {
         cerr << "Could not connect to database." << endl;
@@ -58,7 +56,6 @@ int Application::run() {
     }
 
     // Initialize users
-    std::map<size_t, UserHandler> userHandlers;
     for (auto userData : databaseHandler.getUserData()) {
         auto it = userHandlers.emplace(piecewise_construct, forward_as_tuple(userData.userId), forward_as_tuple(userData, databaseHandler));
         UserHandler& userHandler = it.first->second;
@@ -67,15 +64,14 @@ int Application::run() {
             userHandler.connect(serverData);
     }
 
-    TcpInterface tcpInterface;
-
-    tcpInterface.onHeader([](const iircCommon::Header& header, UserHandler* client){
+    // Register callbacks for clients
+    tcpInterface.onHeader([](const iircCommon::Header& header, UserHandler** client){
         // TODO: validate header for plausibility
         // TODO: true: accept header data - otherwise disconnect client.
         return true;
     });
 
-    tcpInterface.onData([](const iircCommon::Header& header, const vector<uint8_t>& data, UserHandler* client){
+    tcpInterface.onData([](const iircCommon::Header& header, const vector<uint8_t>& data, UserHandler** client){
         // TODO: after valid login:
         //tcpInterface.setUserHandler(...);
         //userHandler.addTcpClient(...);
@@ -83,10 +79,11 @@ int Application::run() {
         return true;
     });
 
-    tcpInterface.onClose([](UserHandler* client){
+    tcpInterface.onClose([](UserHandler** client){
         //userHandler.removeTcpClient(...);
     });
 
+    // Start tcp server for clients
     thread tcpThread([&] {
         try {
             tcpInterface.run();
@@ -97,11 +94,12 @@ int Application::run() {
         cerr << "TcpThread exit." << endl;
     });
 
-    while (running) sleep(1); // IDLE
+    // Idle
+    while (running) sleep(1);
 
+    // Cleanup
     tcpInterface.stop();
     tcpThread.join();
-
 
     return 0;
 }

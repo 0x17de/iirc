@@ -33,7 +33,7 @@ TcpClient::TcpClient(TcpInterfaceImpl& tcpInterfaceImpl, tcp::socket socket) : t
 TcpClient::~TcpClient() {
     if (clientList != 0)
         clientList->erase(it);
-    tcpInterfaceImpl.closeCallback(tcpInterfaceImpl.t);
+    tcpInterfaceImpl.closeCallback(&userHandler);
 }
 
 void TcpClient::run(std::shared_ptr<ClientList> clientList, ClientList::iterator it) {
@@ -53,7 +53,7 @@ void TcpClient::readHeader() {
     boost::asio::async_read(socket,
                             boost::asio::buffer(data.data(), headerPreparation.headerLength),
                             [this,self] (boost::system::error_code ec, std::size_t s) {
-                                if (!ec && tcpInterfaceImpl.headerCallback(header, tcpInterfaceImpl.t)) {
+                                if (!ec && tcpInterfaceImpl.headerCallback(header, &userHandler)) {
                                     cerr << "LEN: " << s << endl;
                                     header.ParseFromString(string((char*)data.data(), headerPreparation.headerLength));
                                     readData();
@@ -73,7 +73,7 @@ void TcpClient::readData() {
                             boost::asio::buffer(data.data(), header.length()),
                             [this,self] (boost::system::error_code ec, std::size_t s) {
                                 cerr << "LEN: " << s << endl;
-                                if (!ec && tcpInterfaceImpl.dataCallback(header, data, tcpInterfaceImpl.t)) {
+                                if (!ec && tcpInterfaceImpl.dataCallback(header, data, &userHandler)) {
                                     readHeader();
                                 }
                             });

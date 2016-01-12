@@ -27,10 +27,9 @@ public:
     void run();
     void stop();
 
-    void onHeader(std::function<bool(const iircCommon::Header& header, UserHandler* t)> callback);
-    void onData(std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, UserHandler* t)> callback);
-    void onClose(std::function<void(UserHandler* t)> callback);
-    void setUserHandler(UserHandler* t);
+    void onHeader(std::function<bool(const iircCommon::Header& header, UserHandler** t)> callback);
+    void onData(std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, UserHandler** t)> callback);
+    void onClose(std::function<void(UserHandler** t)> callback);
 };
 
 
