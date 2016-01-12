@@ -18,7 +18,7 @@ public:
     int headerLength;
     HeaderPreparation() {
         iircCommon::Header header;
-        header.set_type(0);
+        header.set_type(iircCommon::Type::Login);
         header.set_length(0);
         headerLength = header.ByteSize();
     }
@@ -73,7 +73,7 @@ void TcpClient::readData() {
                             boost::asio::buffer(data.data(), header.length()),
                             [this,self] (boost::system::error_code ec, std::size_t s) {
                                 cerr << "LEN: " << s << endl;
-                                if (!ec && tcpInterfaceImpl.dataCallback(data, tcpInterfaceImpl.t)) {
+                                if (!ec && tcpInterfaceImpl.dataCallback(header, data, tcpInterfaceImpl.t)) {
                                     readHeader();
                                 }
                             });

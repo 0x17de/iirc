@@ -75,7 +75,7 @@ int Application::run() {
         return true;
     });
 
-    tcpInterface.onData([](const vector<uint8_t>& data, UserHandler* client){
+    tcpInterface.onData([](const iircCommon::Header& header, const vector<uint8_t>& data, UserHandler* client){
         // TODO: after valid login:
         //tcpInterface.setUserHandler(...);
         //userHandler.addTcpClient(...);

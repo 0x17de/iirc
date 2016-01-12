@@ -2,7 +2,14 @@ syntax = "proto2";
 package iircCommon;
 
 
+enum Type {
+    Login = 0;
+    ChannelList = 1;
+    BacklogNotification = 2;
+}
+
+
 message Header {
-	required int32 type = 1;
+	required Type type = 1;
 	required uint64 length = 2;
 }

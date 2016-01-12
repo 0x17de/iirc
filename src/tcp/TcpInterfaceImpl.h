@@ -34,7 +34,7 @@ public:
 
     UserHandler* t;
     std::function<bool(const iircCommon::Header& header, UserHandler* t)> headerCallback;
-    std::function<bool(const std::vector<uint8_t>& data, UserHandler* t)> dataCallback;
+    std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, UserHandler* t)> dataCallback;
     std::function<void(UserHandler* t)> closeCallback;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;
