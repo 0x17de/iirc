@@ -13,11 +13,11 @@
 
 
 
-struct Header {
-    size_t type;
-    uint64_t length;
-};
+namespace iirc {
+    class Header;
+}
 
+class UserHandler;
 class TcpInterfaceImpl;
 class TcpInterface {
     std::shared_ptr<TcpInterfaceImpl> impl;
@@ -27,9 +27,10 @@ public:
     void run();
     void stop();
 
-    void onHeader(std::function<bool(const Header& header, void* t)> callback);
-    void onData(std::function<bool(const std::vector<uint8_t>& data, void* t)> callback);
-    void setCallbackParameter(void* t);
+    void onHeader(std::function<bool(const iirc::Header& header, UserHandler* t)> callback);
+    void onData(std::function<bool(const std::vector<uint8_t>& data, UserHandler* t)> callback);
+    void onClose(std::function<void(UserHandler* t)> callback);
+    void setUserHandler(UserHandler* t);
 };
 
 

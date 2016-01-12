@@ -23,14 +23,18 @@ void TcpInterface::stop() {
         impl->ioServicePtr->stop();
 }
 
-void TcpInterface::onHeader(function<bool(const Header& header, void* t)> callback) {
+void TcpInterface::onHeader(function<bool(const iirc::Header& header, UserHandler* t)> callback) {
     impl->headerCallback = callback;
 }
 
-void TcpInterface::onData(function<bool(const vector<uint8_t>& data, void* t)> callback) {
+void TcpInterface::onData(function<bool(const vector<uint8_t>& data, UserHandler* t)> callback) {
     impl->dataCallback = callback;
 }
 
-void TcpInterface::setCallbackParameter(void *t) {
+void TcpInterface::onClose(function<void(UserHandler* t)> callback) {
+    impl->closeCallback = callback;
+}
+
+void TcpInterface::setUserHandler(UserHandler *t) {
     impl->t = t;
 }

@@ -13,12 +13,18 @@
 #include <boost/asio/ssl.hpp>
 
 
-struct Header;
+
+namespace iirc {
+    class Header;
+}
+
+class UserHandler;
 class TcpInterface;
 class TcpClient;
 class TcpInterfaceImpl {
 public:
     TcpInterfaceImpl(TcpInterface& tcpInterface);
+    ~TcpInterfaceImpl();
 
     TcpInterface& tcpInterface;
     boost::asio::io_service ioService;
@@ -26,9 +32,10 @@ public:
     boost::asio::ip::tcp::socket socket;
     boost::asio::ip::tcp::acceptor acceptor;
 
-    void* t;
-    std::function<bool(const Header& header, void* t)> headerCallback;
-    std::function<bool(const std::vector<uint8_t>& data, void* t)> dataCallback;
+    UserHandler* t;
+    std::function<bool(const iirc::Header& header, UserHandler* t)> headerCallback;
+    std::function<bool(const std::vector<uint8_t>& data, UserHandler* t)> dataCallback;
+    std::function<void(UserHandler* t)> closeCallback;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;
     ClientList clients;

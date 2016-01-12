@@ -69,17 +69,22 @@ int Application::run() {
 
     TcpInterface tcpInterface;
 
-    tcpInterface.onHeader([](const Header& header, void* client){
+    tcpInterface.onHeader([](const iirc::Header& header, UserHandler* client){
         // TODO: validate header for plausibility
         // TODO: true: accept header data - otherwise disconnect client.
         return true;
     });
 
-    tcpInterface.onData([](const vector<uint8_t>& data, void* client){
-        // TODO: after valid login: assign client handle to pointer
-        // Example: tcpInterface.setUserData(userHandlers.at(0));
+    tcpInterface.onData([](const vector<uint8_t>& data, UserHandler* client){
+        // TODO: after valid login:
+        //tcpInterface.setUserHandler(...);
+        //userHandler.addTcpClient(...);
         // TODO: deserialize data and notify responsible userHandler
         return true;
+    });
+
+    tcpInterface.onClose([](UserHandler* client){
+        //userHandler.removeTcpClient(...);
     });
 
     thread tcpThread([&] {
@@ -96,6 +101,7 @@ int Application::run() {
 
     tcpInterface.stop();
     tcpThread.join();
+
 
     return 0;
 }

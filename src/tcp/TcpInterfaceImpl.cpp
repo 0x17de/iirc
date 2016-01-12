@@ -5,6 +5,8 @@
 #include "TcpInterfaceImpl.h"
 #include "TcpClient.h"
 #include <iostream>
+#include "server.pb.h"
+
 
 
 using namespace std;
@@ -15,6 +17,10 @@ namespace ssl = boost::asio::ssl;
 
 TcpInterfaceImpl::TcpInterfaceImpl(TcpInterface& tcpInterface) : tcpInterface(tcpInterface), endpoint(tcp::v4(), 12667), socket(ioService), acceptor(ioService, endpoint) {
     ioServicePtr = &ioService;
+}
+
+TcpInterfaceImpl::~TcpInterfaceImpl() {
+    google::protobuf::ShutdownProtobufLibrary();
 }
 
 void TcpInterfaceImpl::accept() {
