@@ -17,7 +17,7 @@ class HeaderPreparation {
 public:
     int headerLength;
     HeaderPreparation() {
-        iirc::Header header;
+        iircCommon::Header header;
         header.set_type(0);
         header.set_length(0);
         headerLength = header.ByteSize();

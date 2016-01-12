@@ -11,7 +11,10 @@ set(SOURCE_FILES src/main.cpp src/IniReader.cpp src/IniReader.h src/DatabaseHand
 find_package(Protobuf REQUIRED)
 include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS src/commands/server.proto)
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS
+		src/commands/common.proto
+		src/commands/server.proto
+		src/commands/client.proto)
 
 
 add_executable(iirc ${SOURCE_FILES} ${PROTO_SRCS} ${PROTO_HDRS})

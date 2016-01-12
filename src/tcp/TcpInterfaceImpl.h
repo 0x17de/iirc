@@ -14,7 +14,7 @@
 
 
 
-namespace iirc {
+namespace iircCommon {
     class Header;
 }
 
@@ -33,7 +33,7 @@ public:
     boost::asio::ip::tcp::acceptor acceptor;
 
     UserHandler* t;
-    std::function<bool(const iirc::Header& header, UserHandler* t)> headerCallback;
+    std::function<bool(const iircCommon::Header& header, UserHandler* t)> headerCallback;
     std::function<bool(const std::vector<uint8_t>& data, UserHandler* t)> dataCallback;
     std::function<void(UserHandler* t)> closeCallback;
 

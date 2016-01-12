@@ -23,7 +23,7 @@ void TcpInterface::stop() {
         impl->ioServicePtr->stop();
 }
 
-void TcpInterface::onHeader(function<bool(const iirc::Header& header, UserHandler* t)> callback) {
+void TcpInterface::onHeader(function<bool(const iircCommon::Header& header, UserHandler* t)> callback) {
     impl->headerCallback = callback;
 }
 

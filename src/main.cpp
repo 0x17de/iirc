@@ -1,5 +1,5 @@
 #include "Application.h"
-#include "server.pb.h"
+#include "common.pb.h"
 
 int main() {
     GOOGLE_PROTOBUF_VERIFY_VERSION;

@@ -1,10 +1,6 @@
 syntax = "proto2";
-package iirc;
+package iircServer;
 
-message Header {
-	required int32 type = 1;
-	required uint64 length = 2;
-}
 
 message ChannelList {
 	required uint64 serverId = 1;

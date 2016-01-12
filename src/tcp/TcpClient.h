@@ -12,7 +12,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include "TcpInterface.h"
-#include "server.pb.h"
+#include "common.pb.h"
 
 
 
@@ -22,7 +22,7 @@ class TcpClient : public std::enable_shared_from_this<TcpClient> {
 
     boost::asio::ip::tcp::socket socket;
     std::vector<uint8_t> data;
-    iirc::Header header;
+    iircCommon::Header header;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;
     std::shared_ptr<ClientList> clientList;

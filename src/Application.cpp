@@ -69,7 +69,7 @@ int Application::run() {
 
     TcpInterface tcpInterface;
 
-    tcpInterface.onHeader([](const iirc::Header& header, UserHandler* client){
+    tcpInterface.onHeader([](const iircCommon::Header& header, UserHandler* client){
         // TODO: validate header for plausibility
         // TODO: true: accept header data - otherwise disconnect client.
         return true;
