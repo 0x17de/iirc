@@ -8,8 +8,16 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(SOURCE_FILES src/main.cpp src/IniReader.cpp src/IniReader.h src/DatabaseHandler.cpp src/DatabaseHandler.h src/Application.cpp src/Application.h src/UserHandler.cpp src/UserHandler.h src/irc/IrcClient.cpp src/irc/IrcClient.h src/data/ServerData.h src/config/db.h src/irc/IrcClientImpl.cpp src/irc/IrcClientImpl.h src/data/ChannelData.h src/irc/IrcEvent.h src/tcp/TcpInterface.cpp src/tcp/TcpInterface.h src/tcp/TcpInterfaceImpl.cpp src/tcp/TcpInterfaceImpl.h src/tcp/TcpClient.cpp src/tcp/TcpClient.h)
 
 
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIRS})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS src/commands/server.proto)
 
-add_executable(iirc ${SOURCE_FILES})
+
+add_executable(iirc ${SOURCE_FILES} ${PROTO_SRCS} ${PROTO_HDRS})
+
+
+target_link_libraries(iirc ${PROTOBUF_LIBRARIES})
 
 
 find_package(Boost REQUIRED COMPONENTS system)
