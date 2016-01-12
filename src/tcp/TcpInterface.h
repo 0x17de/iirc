@@ -18,6 +18,7 @@ namespace iircCommon {
 }
 
 class UserHandler;
+class TcpClient;
 class TcpInterfaceImpl;
 class TcpInterface {
     std::shared_ptr<TcpInterfaceImpl> impl;
@@ -28,7 +29,7 @@ public:
     void stop();
 
     void onHeader(std::function<bool(const iircCommon::Header& header, UserHandler** t)> callback);
-    void onData(std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, UserHandler** t)> callback);
+    void onData(std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, TcpClient* client, UserHandler** t)> callback);
     void onClose(std::function<void(UserHandler** t)> callback);
 };
 

@@ -2,6 +2,10 @@ syntax = "proto2";
 package iircServer;
 
 
+message LoginResult {
+    required bool success = 1;
+}
+
 message ChannelList {
 	required uint64 serverId = 1;
 

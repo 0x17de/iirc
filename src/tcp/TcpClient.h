@@ -9,6 +9,7 @@
 #include <list>
 #include <memory>
 #include <vector>
+#include <streambuf>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include "TcpInterface.h"
@@ -17,7 +18,7 @@
 
 
 class TcpInterfaceImpl;
-class TcpClient : public std::enable_shared_from_this<TcpClient> {
+class TcpClient : public std::enable_shared_from_this<TcpClient>, public std::stringbuf {
     TcpInterfaceImpl& tcpInterfaceImpl;
     UserHandler* userHandler;
 
@@ -37,6 +38,8 @@ public:
     ~TcpClient();
 
     void run(std::shared_ptr<ClientList> clientList, ClientList::iterator it);
+    void write(const char* data, size_t length);
+    virtual int sync(); // ostream flush
 };
 
 

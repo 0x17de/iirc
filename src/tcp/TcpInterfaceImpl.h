@@ -33,7 +33,7 @@ public:
     boost::asio::ip::tcp::acceptor acceptor;
 
     std::function<bool(const iircCommon::Header& header, UserHandler** t)> headerCallback;
-    std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, UserHandler** t)> dataCallback;
+    std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, TcpClient* client, UserHandler** t)> dataCallback;
     std::function<void(UserHandler** t)> closeCallback;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;

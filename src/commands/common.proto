@@ -4,8 +4,9 @@ package iircCommon;
 
 enum Type {
     Login = 0;
-    ChannelList = 1;
-    BacklogNotification = 2;
+    LoginResult = 1;
+    ChannelList = 2;
+    BacklogNotification = 3;
 }
 
 

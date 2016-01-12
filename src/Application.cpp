@@ -1,16 +1,12 @@
 #include "Application.h"
 #include <iostream>
-#include <list>
 #include <csignal>
 #include <unistd.h>
 #include <thread>
-#include <map>
-#include <vector>
-#include "IniReader.h"
-#include "DatabaseHandler.h"
-#include "UserHandler.h"
-#include "tcp/TcpInterface.h"
-
+#include "tcp/TcpClient.h"
+#include "common.pb.h"
+#include "server.pb.h"
+#include "client.pb.h"
 
 using namespace std;
 
@@ -71,7 +67,27 @@ int Application::run() {
         return true;
     });
 
-    tcpInterface.onData([](const iircCommon::Header& header, const vector<uint8_t>& data, UserHandler** client){
+    tcpInterface.onData([this](const iircCommon::Header& header, const vector<uint8_t>& data, TcpClient* client, UserHandler** userHandler){
+        if (header.type() == iircCommon::Type::Login) {
+            iircClient::Login login;
+            if (!login.ParseFromArray((char*)data.data(), header.length()))
+                return false; // stop if could not parse
+            cerr << "LOGIN " << login.username() << endl;
+            size_t userId = databaseHandler.getUserFromLogin(login.username(), login.password());
+            if (userId == 0) return false;
+
+            iircCommon::Header header;
+            iircServer::LoginResult loginResult;
+            loginResult.set_success(true);
+            header.set_type(iircCommon::Type::LoginResult);
+            header.set_length(loginResult.ByteSize());
+
+            ostream os(client);
+            header.SerializeToOstream(&os);
+            loginResult.SerializeToOstream(&os);
+            os.flush();
+        }
+
         // TODO: after valid login:
         //tcpInterface.setUserHandler(...);
         //userHandler.addTcpClient(...);

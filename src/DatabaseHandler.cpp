@@ -346,3 +346,16 @@ size_t DatabaseHandler::storeMessage(size_t senderId, size_t channelId, std::str
 
     sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, sender_id, message, time) VALUES (:channelId, :senderId, :message, NOW())", use(channelId), use(senderId), use(message);
 }
+
+size_t DatabaseHandler::getUserFromLogin(const std::string &username, const std::string &password) {
+    using namespace soci;
+
+    size_t result;
+
+    // TODO: don't check passwords vs plaintext
+    sqlSession->once << "SELECT user_id FROM " << userTableName << " WHERE username = :username AND password = :password", into(result), use(username), use(password);
+    if (!sqlSession->got_data())
+        result = 0;
+
+    return result;
+}

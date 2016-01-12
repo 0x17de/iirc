@@ -27,7 +27,7 @@ void TcpInterface::onHeader(function<bool(const iircCommon::Header& header, User
     impl->headerCallback = callback;
 }
 
-void TcpInterface::onData(function<bool(const iircCommon::Header& header, const vector<uint8_t>& data, UserHandler** t)> callback) {
+void TcpInterface::onData(function<bool(const iircCommon::Header& header, const vector<uint8_t>& data, TcpClient* client, UserHandler** t)> callback) {
     impl->dataCallback = callback;
 }
 
