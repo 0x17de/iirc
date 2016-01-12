@@ -4,6 +4,7 @@
 
 #include "TcpClient.h"
 #include "TcpInterfaceImpl.h"
+#include <iostream>
 
 
 using namespace std;
@@ -12,15 +13,17 @@ namespace ssl = boost::asio::ssl;
 
 
 
-TcpClient::TcpClient(TcpInterfaceImpl& tcpInterfaceImpl, tcp::socket socket) : tcpInterfaceImpl(tcpInterfaceImpl), socket(move(socket)) {
+TcpClient::TcpClient(TcpInterfaceImpl& tcpInterfaceImpl, tcp::socket socket) : tcpInterfaceImpl(tcpInterfaceImpl), clientList(0), socket(move(socket)) {
 
 }
 
 TcpClient::~TcpClient() {
-
+    if (clientList)
+        clientList->erase(it);
 }
 
-void TcpClient::run(list<shared_ptr<TcpClient>>::iterator it) {
+void TcpClient::run(ClientList* clientList, ClientList::iterator it) {
+    this->clientList = clientList;
     this->it = move(it);
     readHeader();
 }
@@ -29,11 +32,17 @@ void TcpClient::readHeader() {
     auto self = shared_from_this();
     boost::asio::async_read(socket,
                             boost::asio::buffer(&header, sizeof(header)),
-                            [this] (boost::system::error_code ec, std::size_t) {
+                            [this,self] (boost::system::error_code ec, std::size_t) {
                                 if (!ec) {
-                                    readData();
-                                } else {
-                                    tcpInterfaceImpl.clients.erase(it);
+                                    if (tcpInterfaceImpl.headerCallback(header, tcpInterfaceImpl.t)) {
+                                        try {
+                                            data.resize(header.length);
+                                        } catch(bad_alloc& e) {
+                                            cerr << "ClientHeaderException: " << e.what() << endl;
+                                            return;
+                                        }
+                                        readData();
+                                    }
                                 }
                             });
 }
@@ -41,12 +50,25 @@ void TcpClient::readHeader() {
 void TcpClient::readData() {
     auto self = shared_from_this();
     boost::asio::async_read(socket,
-                            boost::asio::buffer(&header, sizeof(header)),
-                            [this] (boost::system::error_code ec, std::size_t) {
+                            boost::asio::buffer(data.data(), data.size()),
+                            [this,self] (boost::system::error_code ec, std::size_t) {
                                 if (!ec) {
-                                    readHeader();
+                                    if (tcpInterfaceImpl.dataCallback(data, tcpInterfaceImpl.t)) {
+                                        try {
+                                            data.resize(0);
+                                        } catch(bad_alloc& e) {
+                                            cerr << "ClientHeaderException: " << e.what() << endl;
+                                            return;
+                                        }
+                                        readHeader();
+                                    }
                                 } else {
-                                    tcpInterfaceImpl.clients.erase(it);
+                                    try {
+                                        data.resize(0);
+                                    } catch(bad_alloc& e) {
+                                        cerr << "ClientHeaderException: " << e.what() << endl;
+                                        return;
+                                    }
                                 }
                             });
 }

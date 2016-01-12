@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <thread>
 #include <map>
+#include <vector>
 #include "IniReader.h"
 #include "DatabaseHandler.h"
 #include "UserHandler.h"
@@ -67,6 +68,20 @@ int Application::run() {
     }
 
     TcpInterface tcpInterface;
+
+    tcpInterface.onHeader([](const Header& header, void* client){
+        // TODO: validate header for plausibility
+        // TODO: true: accept header data - otherwise disconnect client.
+        return true;
+    });
+
+    tcpInterface.onData([](const vector<uint8_t>& data, void* client){
+        // TODO: after valid login: assign client handle to pointer
+        // Example: tcpInterface.setUserData(userHandlers.at(0));
+        // TODO: deserialize data and notify responsible userHandler
+        return true;
+    });
+
     thread tcpThread([&] {
         try {
             tcpInterface.run();
