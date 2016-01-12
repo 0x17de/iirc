@@ -3,18 +3,26 @@
 #include <list>
 #include <csignal>
 #include <unistd.h>
+#include <thread>
 #include "IniReader.h"
 #include "DatabaseHandler.h"
 #include "UserHandler.h"
+#include "tcp/TcpInterface.h"
 
 
 using namespace std;
+
 
 
 static sig_atomic_t running = true;
 
 static void sigint(int) {
     running = false;
+
+    static int count = 0;
+    ++count;
+    if (count >= 3)
+        exit(1);
 }
 static void sigterm(int) {
     if (running == false)
@@ -48,26 +56,33 @@ int Application::run() {
     }
 
     // Initialize users
-    std::unordered_map<size_t, UserHandler> userHandlers;
+    std::list<UserHandler> userHandlers;
     for (auto userData : databaseHandler.getUserData()) {
-        auto it = userHandlers.emplace(piecewise_construct, forward_as_tuple(userData.userId), forward_as_tuple(userData, databaseHandler));
-        UserHandler& userHandler = it.first->second;
+        userHandlers.emplace_back(userData, databaseHandler);
+        UserHandler& userHandler = userHandlers.back();
 
         for (auto serverData : databaseHandler.getAutoConnectServers(userData.userId))
             userHandler.connect(serverData);
     }
 
-    while(running) sleep(1);
+    TcpInterface tcpInterface;
+    thread tcpThread([&] {
+        try {
+            tcpInterface.run();
+        }
+        catch(exception& e) {
+            cerr << "(TcpInterface)Exception: " << e.what() << endl;
+        }
+        cerr << "TcpThread exit." << endl;
+    });
 
-    // Read IRC configuration from database
+    while (running) sleep(1); // IDLE
 
-    // Autologin to configured servers&channels
+    tcpInterface.stop();
+    tcpThread.join();
 
-    // Start websocket server
-
-    // IDLE
-
-
+    for (auto userHandler : userHandlers) // if tcp client is broken stop other threads
+        userHandler.disconnect();
 
     return 0;
 }
