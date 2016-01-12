@@ -38,7 +38,7 @@ public:
     std::function<void(UserHandler* t)> closeCallback;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;
-    ClientList clients;
+    std::shared_ptr<ClientList> clients;
     boost::asio::io_service* ioServicePtr = 0;
 
     void run();

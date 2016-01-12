@@ -25,7 +25,7 @@ class TcpClient : public std::enable_shared_from_this<TcpClient> {
     iirc::Header header;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;
-    ClientList* clientList;
+    std::shared_ptr<ClientList> clientList;
     ClientList::iterator it;
 
     void readHeader();
@@ -35,7 +35,7 @@ public:
     TcpClient(TcpInterfaceImpl& tcpInterface, boost::asio::ip::tcp::socket socket);
     ~TcpClient();
 
-    void run(ClientList* clientList, ClientList::iterator it);
+    void run(std::shared_ptr<ClientList> clientList, ClientList::iterator it);
 };
 
 

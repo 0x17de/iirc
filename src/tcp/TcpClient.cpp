@@ -31,12 +31,12 @@ TcpClient::TcpClient(TcpInterfaceImpl& tcpInterfaceImpl, tcp::socket socket) : t
 }
 
 TcpClient::~TcpClient() {
-    if (clientList)
+    if (clientList != 0)
         clientList->erase(it);
     tcpInterfaceImpl.closeCallback(tcpInterfaceImpl.t);
 }
 
-void TcpClient::run(ClientList* clientList, ClientList::iterator it) {
+void TcpClient::run(std::shared_ptr<ClientList> clientList, ClientList::iterator it) {
     this->clientList = clientList;
     this->it = move(it);
     readHeader();

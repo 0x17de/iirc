@@ -15,7 +15,7 @@ namespace ssl = boost::asio::ssl;
 
 
 
-TcpInterfaceImpl::TcpInterfaceImpl(TcpInterface& tcpInterface) : tcpInterface(tcpInterface), endpoint(tcp::v4(), 12667), socket(ioService), acceptor(ioService, endpoint) {
+TcpInterfaceImpl::TcpInterfaceImpl(TcpInterface& tcpInterface) : clients(make_shared<ClientList>()), tcpInterface(tcpInterface), endpoint(tcp::v4(), 12667), socket(ioService), acceptor(ioService, endpoint) {
     ioServicePtr = &ioService;
 }
 
@@ -28,8 +28,8 @@ void TcpInterfaceImpl::accept() {
         cerr << "ACCEPT" << endl;
         if (!ec) {
             shared_ptr<TcpClient> client(make_shared<TcpClient>(*this, move(socket)));
-            clients.push_front(client);
-            client->run(&clients, clients.begin());
+            clients->push_front(client);
+            client->run(clients, clients->begin());
         }
         accept();
     });
