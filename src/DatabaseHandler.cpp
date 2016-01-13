@@ -311,6 +311,16 @@ std::list<ChannelData> DatabaseHandler::getAutoJoinChannels(size_t serverId) {
     return result;
 }
 
+std::string DatabaseHandler::getChannelName(size_t channelId) {
+	using namespace soci;
+
+	string channelName;
+	sqlSession->once << "SELECT name FROM " << channelTableName << " WHERE channel_id = :channelId LIMIT 1", into(channelName), use(channelId);
+	if (sqlSession->got_data())
+		return channelName;
+	return string();
+}
+
 size_t DatabaseHandler::getOrCreateChannelId(size_t serverId, const std::string &channelName) {
     using namespace soci;
 
@@ -341,7 +351,7 @@ size_t DatabaseHandler::getOrCreateSenderId(const std::string &senderNick) {
     return senderId;
 }
 
-size_t DatabaseHandler::storeMessage(size_t senderId, size_t channelId, std::string &message) {
+size_t DatabaseHandler::storeMessage(size_t senderId, size_t channelId, const std::string &message) {
     using namespace soci;
 
     sqlSession->once << "INSERT INTO " << backlogTableName << " (channel_id, sender_id, message, time) VALUES (:channelId, :senderId, :message, NOW())", use(channelId), use(senderId), use(message);

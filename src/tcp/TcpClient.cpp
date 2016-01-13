@@ -13,19 +13,6 @@ namespace ssl = boost::asio::ssl;
 
 
 
-class HeaderPreparation {
-public:
-    int headerLength;
-    HeaderPreparation() {
-        iircCommon::Header header;
-        header.set_type(iircCommon::Type::Login);
-        header.set_length(0);
-        headerLength = header.ByteSize();
-    }
-};
-static const HeaderPreparation headerPreparation;
-
-
 TcpClient::TcpClient(TcpInterfaceImpl& tcpInterfaceImpl, tcp::socket socket) : tcpInterfaceImpl(tcpInterfaceImpl), clientList(0), socket(move(socket)) {
 
 }
@@ -33,30 +20,41 @@ TcpClient::TcpClient(TcpInterfaceImpl& tcpInterfaceImpl, tcp::socket socket) : t
 TcpClient::~TcpClient() {
     if (clientList != 0)
         clientList->erase(it);
-    tcpInterfaceImpl.closeCallback(&userHandler);
+    tcpInterfaceImpl.closeCallback(this, &userHandler);
 }
 
 void TcpClient::run(std::shared_ptr<ClientList> clientList, ClientList::iterator it) {
     this->clientList = clientList;
     this->it = move(it);
-    readHeader();
+    readDataType();
 }
 
-void TcpClient::readHeader() {
+void TcpClient::readDataType() {
     auto self = shared_from_this();
-    try {
-        data.resize(headerPreparation.headerLength);
-    } catch(bad_alloc& e) {
-        cerr << "ClientHeaderException: " << e.what() << endl;
-        return;
-    }
     boost::asio::async_read(socket,
-                            boost::asio::buffer(data.data(), headerPreparation.headerLength),
+                            boost::asio::buffer((char*)&dataType, sizeof(uint16_t)),
                             [this,self] (boost::system::error_code ec, std::size_t s) {
-                                if (!ec && tcpInterfaceImpl.headerCallback(header, &userHandler)) {
-                                    cerr << "LEN: " << s << endl;
-                                    if (header.ParseFromArray((char*)data.data(), headerPreparation.headerLength))
-                                        readData(); // continue if header could be parsed
+                                if (!ec) {
+                                    cerr << "READ(Type): " << (uint32_t)dataType << " " << s << endl;
+                                    readDataSize(); // continue if header could be parsed
+                                }
+                            });
+}
+
+void TcpClient::readDataSize() {
+    auto self = shared_from_this();
+    boost::asio::async_read(socket,
+                            boost::asio::buffer((char*)&dataSize, sizeof(uint64_t)),
+                            [this,self] (boost::system::error_code ec, std::size_t s) {
+                                if (!ec && tcpInterfaceImpl.headerCallback(dataType, dataSize, &userHandler)) {
+                                    try {
+                                        cerr << "READ(Size): " << dataSize << " " << s << endl;
+                                        data.resize(dataSize);
+                                    } catch(bad_alloc& e) {
+                                        cerr << "ClientHeaderException: " << e.what() << endl;
+                                        return;
+                                    }
+                                    readData(); // continue if header could be parsed
                                 }
                             });
 }
@@ -64,17 +62,22 @@ void TcpClient::readHeader() {
 void TcpClient::readData() {
     auto self = shared_from_this();
     try {
-        data.resize(header.length());
+        cerr << "RESIZE: " << dataSize << endl;
+        if (dataSize > 0xffffff || dataSize <= 0) {
+            cerr << "RESIZE: " << dataSize << " REJECTED" << endl;
+            return;
+        }
+        data.resize(dataSize);
     } catch(bad_alloc& e) {
         cerr << "ClientHeaderException: " << e.what() << endl;
         return;
     }
     boost::asio::async_read(socket,
-                            boost::asio::buffer(data.data(), header.length()),
+                            boost::asio::buffer(data.data(), dataSize),
                             [this,self] (boost::system::error_code ec, std::size_t s) {
                                 cerr << "LEN: " << s << endl;
-                                if (!ec && tcpInterfaceImpl.dataCallback(header, data, this, &userHandler)) {
-                                    readHeader();
+                                if (!ec && tcpInterfaceImpl.dataCallback(dataType, data, self, &userHandler)) {
+                                    readDataType();
                                 }
                             });
 }
@@ -84,8 +87,8 @@ void TcpClient::write(const char *data, size_t length) {
 }
 
 int TcpClient::sync() {
-    uintptr_t size = pptr() - pbase();
-    cerr << "WRITE: " << size << endl;
-    write(pbase(), size);
-    return streambuf::sync();
+    string s(str());
+    str(std::basic_string<char>());
+    write(s.c_str(), s.size());
+    return 0;
 }

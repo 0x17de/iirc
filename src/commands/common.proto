@@ -2,15 +2,10 @@ syntax = "proto2";
 package iircCommon;
 
 
-enum Type {
+enum DataType {
     Login = 0;
     LoginResult = 1;
     ChannelList = 2;
     BacklogNotification = 3;
-}
-
-
-message Header {
-	required Type type = 1;
-	required uint64 length = 2;
+    ChatMessage = 4;
 }

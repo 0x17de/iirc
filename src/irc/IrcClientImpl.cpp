@@ -48,7 +48,7 @@ void IrcClientImpl::onEvent<IrcEvent::Quit>(const char *event, const char *origi
     for (unsigned int i = 0; i < count; ++i)
         cerr << " " << params[i];
     cerr << endl;
-    joinedChannels.clear();
+    channelMulti.clear();
     userHandler.onEvent<IrcEvent::Quit>(client, event, origin, params, count);
 }
 
@@ -77,9 +77,12 @@ void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origi
         cerr << " " << params[i];
     cerr << endl;
     for (unsigned int i = 0; i < count; ++i) {
-        auto it = joinedChannels.find(params[0]);
-        if (it == joinedChannels.end())
-            joinedChannels.emplace(params[0], 0 /* lookup id in DB */);
+		auto& index = channelMulti.get<0>();
+        auto it = index.find(params[0]);
+        if (it == index.end()) {
+			size_t channelId = userHandler.getDatabaseHandler().getOrCreateChannelId(serverData.serverId, params[0]);
+            channelMulti.insert({channelId, params[0]});
+		}
     }
     userHandler.onEvent<IrcEvent::Join>(client, event, origin, params, count);
 }
@@ -90,8 +93,11 @@ void IrcClientImpl::onEvent<IrcEvent::Part>(const char *event, const char *origi
     for (unsigned int i = 0; i < count; ++i)
         cerr << " " << params[i];
     cerr << endl;
-    for (unsigned int i = 0; i < count; ++i)
-        joinedChannels.erase(params[i]);
+
+	auto& index = channelMulti.get<0>();
+    for (unsigned int i = 0; i < count; ++i) {
+        index.erase(params[i]);
+	}
     userHandler.onEvent<IrcEvent::Part>(client, event, origin, params, count);
 }
 
@@ -207,4 +213,8 @@ bool IrcClientImpl::connect() {
 
 void IrcClientImpl::join(const char* channel, const char* key) {
     irc_cmd_join(session, channel, key);
+}
+
+void IrcClientImpl::send(const std::string& channel, const std::string& message) {
+	irc_cmd_msg(session, channel.c_str(), message.c_str());
 }

@@ -11,12 +11,9 @@
 #include <functional>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
+#include "common.pb.h"
 
 
-
-namespace iircCommon {
-    class Header;
-}
 
 class UserHandler;
 class TcpInterface;
@@ -32,9 +29,9 @@ public:
     boost::asio::ip::tcp::socket socket;
     boost::asio::ip::tcp::acceptor acceptor;
 
-    std::function<bool(const iircCommon::Header& header, UserHandler** t)> headerCallback;
-    std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, TcpClient* client, UserHandler** t)> dataCallback;
-    std::function<void(UserHandler** t)> closeCallback;
+    std::function<bool(iircCommon::DataType dataType, uint64_t dataSize, UserHandler** t)> headerCallback;
+    std::function<bool(iircCommon::DataType dataType, const std::vector<uint8_t>& data, std::shared_ptr<TcpClient> client, UserHandler** t)> dataCallback;
+    std::function<void(TcpClient* tcpClient, UserHandler** t)> closeCallback;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;
     std::shared_ptr<ClientList> clients;

@@ -6,6 +6,21 @@ message LoginResult {
     required bool success = 1;
 }
 
+message ConnectionsList {
+    message Server {
+        required uint64 serverId = 1;
+
+        message Channel {
+            required uint64 id = 1;
+            required string name = 2;
+            required uint64 lastReadId = 3;
+        }
+
+        repeated Channel channels = 2;
+    }
+    repeated Server servers = 1;
+}
+
 message ChannelList {
 	required uint64 serverId = 1;
 

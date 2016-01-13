@@ -20,17 +20,19 @@
 class TcpInterfaceImpl;
 class TcpClient : public std::enable_shared_from_this<TcpClient>, public std::stringbuf {
     TcpInterfaceImpl& tcpInterfaceImpl;
-    UserHandler* userHandler;
+    UserHandler* userHandler = 0;
 
     boost::asio::ip::tcp::socket socket;
     std::vector<uint8_t> data;
-    iircCommon::Header header;
+    iircCommon::DataType dataType;
+    uint64_t dataSize;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;
     std::shared_ptr<ClientList> clientList;
     ClientList::iterator it;
 
-    void readHeader();
+    void readDataType();
+    void readDataSize();
     void readData();
 
 public:

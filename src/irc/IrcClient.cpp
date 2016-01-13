@@ -1,3 +1,4 @@
+#include <exception>
 #include "IrcClient.h"
 #include "data/ServerData.h"
 #include "UserHandler.h"
@@ -15,19 +16,20 @@ size_t IrcClient::getServerId() {
     return impl->serverData.serverId;
 }
 
-size_t IrcClient::getChannelId(const std::string &channelName) {
-    size_t result;
+const IrcChannelData& IrcClient::getChannelData(size_t channelId) {
+	auto& index = impl->channelMulti.get<1>();
+    auto it = index.find(channelId);
+    if (it == index.end())
+		throw out_of_range("Could not find channel.");
+	return *it;
+}
 
-    auto it = impl->joinedChannels.find(channelName);
-    if (it == impl->joinedChannels.end())
-        result = 0;
-    else
-        result = it->second;
-
-    if (result == 0) // lookup in database
-        result = impl->userHandler.getDatabaseHandler().getOrCreateChannelId(getServerId(), channelName);
-
-    return result;
+const IrcChannelData& IrcClient::getChannelData(const std::string &channelName) {
+    auto& index = impl->channelMulti.get<0>();
+    auto it = index.find(channelName);
+    if (it == index.end())
+		throw out_of_range("Could not find channel.");
+	return *it;
 }
 
 bool IrcClient::connect() {
@@ -40,4 +42,8 @@ void IrcClient::disconnect() {
 
 void IrcClient::join(const char* channel, const char* key) {
     impl->join(channel, key);
+}
+
+void IrcClient::send(const std::string& channel, const std::string& message) {
+	impl->send(channel, message);
 }

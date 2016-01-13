@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <thread>
 #include "tcp/TcpClient.h"
-#include "common.pb.h"
 #include "server.pb.h"
 #include "client.pb.h"
 
@@ -61,42 +60,73 @@ int Application::run() {
     }
 
     // Register callbacks for clients
-    tcpInterface.onHeader([](const iircCommon::Header& header, UserHandler** client){
+    tcpInterface.onHeader([](iircCommon::DataType dataType, uint64_t dataSize, UserHandler** client){
         // TODO: validate header for plausibility
         // TODO: true: accept header data - otherwise disconnect client.
         return true;
     });
 
-    tcpInterface.onData([this](const iircCommon::Header& header, const vector<uint8_t>& data, TcpClient* client, UserHandler** userHandler){
-        if (header.type() == iircCommon::Type::Login) {
-            iircClient::Login login;
-            if (!login.ParseFromArray((char*)data.data(), header.length()))
-                return false; // stop if could not parse
-            cerr << "LOGIN " << login.username() << endl;
-            size_t userId = databaseHandler.getUserFromLogin(login.username(), login.password());
-            if (userId == 0) return false;
+    tcpInterface.onData([this](iircCommon::DataType dataType, const vector<uint8_t>& data, std::shared_ptr<TcpClient> client, UserHandler** userHandler){
+        if (*userHandler == 0) { // not logged in
+            if (dataType == iircCommon::DataType::Login) {
+                iircClient::Login login;
+                if (!login.ParseFromArray((char *) data.data(), data.size()))
+                    return false; // stop if could not parse
 
-            iircCommon::Header header;
-            iircServer::LoginResult loginResult;
-            loginResult.set_success(true);
-            header.set_type(iircCommon::Type::LoginResult);
-            header.set_length(loginResult.ByteSize());
+                cerr << "LOGIN " << login.username() << endl;
+                size_t userId = databaseHandler.getUserFromLogin(login.username(), login.password());
+                if (userId == 0) return false;
 
-            ostream os(client);
-            header.SerializeToOstream(&os);
-            loginResult.SerializeToOstream(&os);
-            os.flush();
+                try {
+                    *userHandler = &userHandlers.at(userId);
+                }
+                catch (out_of_range &e) {
+                    return false; // TODO: in database, but not loaded currently
+                }
+                (*userHandler)->addTcpClient(client);
+
+                iircServer::LoginResult loginResult;
+                loginResult.set_success(true);
+                uint64_t loginSize = loginResult.ByteSize();
+
+                ostream os(client.get());
+                const uint16_t newDataType = iircCommon::DataType::LoginResult;
+                os.write((char *) &newDataType, sizeof(uint16_t));
+                os.write((char *) &loginSize, sizeof(uint64_t));
+                loginResult.SerializeToOstream(&os);
+                os.flush();
+            }
+        }
+        else { // logged in
+            if (dataType == iircCommon::DataType::ChatMessage) {
+                iircClient::ChatMessage chatMessage;
+                if (!chatMessage.ParseFromArray((char*)data.data(), data.size()))
+                    return false;
+
+                cerr << "CHAT " << chatMessage.message() << endl;
+
+				try {
+	                IrcClient& ircClient = (*userHandler)->get(chatMessage.serverid());
+	                string channelName = ircClient.getChannelData(chatMessage.channelid()).name;
+					cerr << "CHANNEL: " << channelName << endl;
+					ircClient.send(channelName, chatMessage.message());
+
+					size_t senderId = databaseHandler.getOrCreateSenderId("iircUser"); // TODO: replace with currently active nickname
+					databaseHandler.storeMessage(senderId, chatMessage.channelid(), chatMessage.message());
+				}
+				catch(out_of_range& e) {
+					cerr << "ChatMessage: " << e.what() << endl;
+					return false;
+				}
+            }
         }
 
-        // TODO: after valid login:
-        //tcpInterface.setUserHandler(...);
-        //userHandler.addTcpClient(...);
-        // TODO: deserialize data and notify responsible userHandler
         return true;
     });
 
-    tcpInterface.onClose([](UserHandler** client){
-        //userHandler.removeTcpClient(...);
+    tcpInterface.onClose([](TcpClient* client, UserHandler** userHandler) {
+        if (*userHandler)
+            (*userHandler)->removeTcpClient(client);
     });
 
     // Start tcp server for clients

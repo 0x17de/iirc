@@ -11,11 +11,33 @@
 #include <list>
 #include <thread>
 #include <map>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/ordered_index.hpp>
 
 #include <libircclient.h>
 #include <thread>
 #include "UserHandler.h"
 #include "IrcEvent.h"
+#include "IrcClient.h"
+
+
+
+typedef boost::multi_index::multi_index_container<
+  IrcChannelData,
+  boost::multi_index::indexed_by<
+    boost::multi_index::ordered_unique<
+      boost::multi_index::member<
+        IrcChannelData, std::string, &IrcChannelData::name
+      >
+    >,
+    boost::multi_index::ordered_unique<
+      boost::multi_index::member<
+        IrcChannelData, size_t, &IrcChannelData::channelId
+      >
+    >
+  >
+> IrcChannelData_multi;
 
 
 class IrcClient;
@@ -28,7 +50,7 @@ public:
     irc_session_t* session;
     std::thread runThread;
     int runResult;
-    std::map<std::string, size_t> joinedChannels;
+    IrcChannelData_multi channelMulti;
 
 private:
     bool createSession();
@@ -47,6 +69,7 @@ public:
     void displayError();
     bool connect();
     void join(const char* channel, const char* key);
+	void send(const std::string& channel, const std::string& message);
 };
 
 

@@ -10,12 +10,9 @@
 #include <vector>
 #include <functional>
 #include <cstdint>
+#include "common.pb.h"
 
 
-
-namespace iircCommon {
-    class Header;
-}
 
 class UserHandler;
 class TcpClient;
@@ -28,9 +25,9 @@ public:
     void run();
     void stop();
 
-    void onHeader(std::function<bool(const iircCommon::Header& header, UserHandler** t)> callback);
-    void onData(std::function<bool(const iircCommon::Header& header, const std::vector<uint8_t>& data, TcpClient* client, UserHandler** t)> callback);
-    void onClose(std::function<void(UserHandler** t)> callback);
+    void onHeader(std::function<bool(iircCommon::DataType dataType, uint64_t dataSize, UserHandler** t)> callback);
+    void onData(std::function<bool(iircCommon::DataType dataType, const std::vector<uint8_t>& data, std::shared_ptr<TcpClient> client, UserHandler** t)> callback);
+    void onClose(std::function<void(TcpClient* tcpClient, UserHandler** t)> callback);
 };
 
 

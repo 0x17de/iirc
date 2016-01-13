@@ -1,9 +1,11 @@
 #include "UserHandler.h"
 #include <iostream>
 #include <sstream>
+#include "server.pb.h"
 
 
 using namespace std;
+
 
 
 template<>
@@ -19,7 +21,7 @@ void UserHandler::onEvent<IrcEvent::PrivMsg>(IrcClient& client, const char *even
     string senderName(splitNickFromIdentifier(origin));
     size_t senderId = databaseHandler.getOrCreateSenderId(senderName);
     string channel(params[0]);
-    size_t channelId = client.getChannelId(channel);
+    size_t channelId = client.getChannelData(channel).channelId;
     string message(params[1]);
 
     if (channelId == 0) {
@@ -27,9 +29,19 @@ void UserHandler::onEvent<IrcEvent::PrivMsg>(IrcClient& client, const char *even
         return;
     }
 
-    databaseHandler.storeMessage(senderId, channelId, message);
+    size_t messageId = databaseHandler.storeMessage(senderId, channelId, message);
 
-    // TODO: save to database
+    if (tcpClients.size() == 0) return; // only prepare data if clients connected
+    iircServer::BacklogNotification backlogNotification;
+    backlogNotification.set_serverid(client.getServerId());
+    auto channelBacklog = backlogNotification.add_channelbacklog();
+    channelBacklog->set_channelid(channelId);
+    auto backlog = channelBacklog->add_backlog();
+    backlog->set_messageid(messageId);
+    backlog->set_timestamp(0);
+    backlog->set_nick(senderName);
+    backlog->set_message(message);
+    send(iircCommon::DataType::BacklogNotification, backlogNotification);
 }
 template<>
 void UserHandler::onEvent<IrcEvent::Channel>(IrcClient& client, const char *event, const char *origin, const char **params, unsigned int count) {
@@ -48,6 +60,24 @@ void UserHandler::onEvent<IrcEvent::Quit>(IrcClient& client, const char *event, 
 
 }
 
+void UserHandler::send(iircCommon::DataType type, ::google::protobuf::Message& message) {
+    uint16_t newType = type;
+    uint64_t dataSize = message.ByteSize();
+
+    for (auto tcpClientWeak : tcpClients) {
+        auto tcpClient = tcpClientWeak.lock();
+        if (!tcpClient) {
+            removeTcpClient(tcpClientWeak);
+            continue;
+        }
+        ostream os(tcpClient.get());
+        os.write((char*)&newType, sizeof(uint16_t));
+        os.write((char*)&dataSize, sizeof(uint64_t));
+        message.SerializeToOstream(&os);
+        os.flush();
+    }
+}
+
 std::string UserHandler::splitNickFromIdentifier(const std::string identifier) {
     string nick;
     // extract sender name from identifier
@@ -64,11 +94,11 @@ UserHandler::UserHandler(const UserData& userData, DatabaseHandler& databaseHand
 }
 
 bool UserHandler::connect(const ServerData& serverData) {
-    auto it = ircClients.find(serverData.serverId);
-    if (it != ircClients.end()) return true; // already connected
+    auto it = ircClientByServer.find(serverData.serverId);
+    if (it != ircClientByServer.end()) return true; // already connected
 
-    auto jt = ircClients.emplace(piecewise_construct, forward_as_tuple(serverData.serverId),
-                                 forward_as_tuple(*this, serverData));
+    auto jt = ircClientByServer.emplace(piecewise_construct, forward_as_tuple(serverData.serverId),
+                                        forward_as_tuple(*this, serverData));
     IrcClient &ircClient = jt.first->second;
     if (!ircClient.connect()) {
         cerr << "Error connecting to IRC server." << endl;
@@ -86,12 +116,28 @@ DatabaseHandler& UserHandler::getDatabaseHandler() {
 }
 
 IrcClient& UserHandler::get(size_t serverId) {
-    return ircClients.at(serverId);
+    return ircClientByServer.at(serverId);
 }
 
 void UserHandler::disconnect() {
-    for (auto p : ircClients) {
+    for (auto p : ircClientByServer) {
         IrcClient& client = p.second;
         client.disconnect();
     }
+}
+
+void UserHandler::addTcpClient(std::weak_ptr<TcpClient> tcpClient) {
+    tcpClients.push_back(tcpClient);
+}
+
+void UserHandler::removeTcpClient(std::weak_ptr<TcpClient> tcpClientWeak) {
+    auto tcpClient = tcpClientWeak.lock();
+    removeTcpClient(tcpClient ? tcpClient.get() : 0);
+}
+
+void UserHandler::removeTcpClient(TcpClient* tcpClient) {
+    tcpClients.remove_if([&](std::weak_ptr<TcpClient> savedClientWeak) {
+        if (auto savedClient = savedClientWeak.lock())
+            return !savedClient || savedClient.get() == tcpClient;
+    });
 }

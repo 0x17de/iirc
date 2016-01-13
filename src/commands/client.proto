@@ -6,3 +6,9 @@ message Login {
     required string username = 1;
     required string password = 2;
 }
+
+message ChatMessage {
+    required uint64 serverId = 1;
+    required uint64 channelId = 2;
+    required string message = 3;
+}

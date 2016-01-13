@@ -48,9 +48,10 @@ public:
     std::list<UserData> getUserData();
     std::list<ServerData> getAutoConnectServers(size_t userId);
     std::list<ChannelData> getAutoJoinChannels(size_t serverId);
+    std::string getChannelName(size_t channelId);
     size_t getOrCreateChannelId(size_t serverId, const std::string &channelName);
     size_t getOrCreateSenderId(const std::string &senderNick);
-    size_t storeMessage(size_t senderId, size_t channelId, std::string& message);
+    size_t storeMessage(size_t senderId, size_t channelId, const std::string& message);
 
     size_t getUserFromLogin(const std::string& username, const std::string& password);
 };
