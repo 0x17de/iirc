@@ -5,6 +5,7 @@
 #include "TcpClient.h"
 #include "TcpInterfaceImpl.h"
 #include <iostream>
+#include "server.pb.h"
 
 
 using namespace std;
@@ -32,9 +33,10 @@ void TcpClient::run(std::shared_ptr<ClientList> clientList, ClientList::iterator
 void TcpClient::readDataType() {
     auto self = shared_from_this();
     boost::asio::async_read(socket,
-                            boost::asio::buffer((char*)&dataType, sizeof(uint16_t)),
+                            boost::asio::buffer((char*)&dataTypeBuffer, sizeof(uint16_t)),
                             [this,self] (boost::system::error_code ec, std::size_t s) {
                                 if (!ec) {
+									dataType = (iircCommon::DataType)dataTypeBuffer;
                                     cerr << "READ(Type): " << (uint32_t)dataType << " " << s << endl;
                                     readDataSize(); // continue if header could be parsed
                                 }
@@ -91,4 +93,15 @@ int TcpClient::sync() {
     str(std::basic_string<char>());
     write(s.c_str(), s.size());
     return 0;
+}
+
+void TcpClient::send(iircCommon::DataType type, ::google::protobuf::Message& message) {
+	uint16_t newType = type;
+    uint64_t dataSize = message.ByteSize();
+
+	ostream os(this);
+	os.write((char*)&newType, sizeof(uint16_t));
+	os.write((char*)&dataSize, sizeof(uint64_t));
+	message.SerializeToOstream(&os);
+	os.flush();
 }

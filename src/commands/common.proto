@@ -8,4 +8,6 @@ enum DataType {
     ChannelList = 2;
     BacklogNotification = 3;
     ChatMessage = 4;
+    UserList = 5;
+    ConnectionsList = 6;
 }

@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <libircclient.h>
-#include <libirc_events.h>
+#include <libirc_rfcnumeric.h>
 #include "IrcClientImpl.h"
 
 
@@ -27,26 +27,26 @@ static inline void onEvent(irc_session_t * session, const char * event, const ch
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Unknown>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cerr << "EVENT UNKNOWN: " << (event?event:"") << " " << (origin?origin:"");
+    cerr << "EVENT UNKNOWN: " << (event?event:"") << "·" << (origin?origin:"");
     for (unsigned int i = 0; i < count; ++i)
-        cerr << " " << params[i];
+        cerr << "·" << params[i];
     cerr << endl;
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Connect>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT CONNECT: " << (event?event:"") << " " << (origin?origin:"");
+    cout << "EVENT CONNECT: " << (event?event:"") << "·" << (origin?origin:"");
     for (unsigned int i = 0; i < count; ++i)
-        cerr << " " << params[i];
+        cerr << "·" << params[i];
     cerr << endl;
     userHandler.onEvent<IrcEvent::Connect>(client, event, origin, params, count);
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Quit>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT QUIT: " << (event?event:"") << " " << (origin?origin:"");
+    cout << "EVENT QUIT: " << (event?event:"") << "·" << (origin?origin:"");
     for (unsigned int i = 0; i < count; ++i)
-        cerr << " " << params[i];
+        cerr << "·" << params[i];
     cerr << endl;
     channelMulti.clear();
     userHandler.onEvent<IrcEvent::Quit>(client, event, origin, params, count);
@@ -54,27 +54,27 @@ void IrcClientImpl::onEvent<IrcEvent::Quit>(const char *event, const char *origi
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Channel>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT CHANNEL: " << (event?event:"") << " " << (origin?origin:"");
+    cout << "EVENT CHANNEL: " << (event?event:"") << "·" << (origin?origin:"");
     for (unsigned int i = 0; i < count; ++i)
-        cerr << " " << params[i];
+        cerr << "·" << params[i];
     cerr << endl;
     userHandler.onEvent<IrcEvent::Channel>(client, event, origin, params, count);
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::PrivMsg>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT PRIVMSG: " << (event?event:"") << " " << (origin?origin:"");
+    cout << "EVENT PRIVMSG: " << (event?event:"") << "·" << (origin?origin:"");
     for (unsigned int i = 0; i < count; ++i)
-        cerr << " " << params[i];
+        cerr << "·" << params[i];
     cerr << endl;
     userHandler.onEvent<IrcEvent::PrivMsg>(client, event, origin, params, count);
 }
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT JOIN: " << (event?event:"") << " " << (origin?origin:"");
+    cout << "EVENT JOIN: " << (event?event:"") << "·" << (origin?origin:"");
     for (unsigned int i = 0; i < count; ++i)
-        cerr << " " << params[i];
+        cerr << "·" << params[i];
     cerr << endl;
     for (unsigned int i = 0; i < count; ++i) {
 		auto& index = channelMulti.get<0>();
@@ -89,9 +89,9 @@ void IrcClientImpl::onEvent<IrcEvent::Join>(const char *event, const char *origi
 
 template <>
 void IrcClientImpl::onEvent<IrcEvent::Part>(const char *event, const char *origin, const char **params, unsigned int count) {
-    cout << "EVENT JOIN: " << (event?event:"") << " " << (origin?origin:"");
+    cout << "EVENT JOIN: " << (event?event:"") << "·" << (origin?origin:"");
     for (unsigned int i = 0; i < count; ++i)
-        cerr << " " << params[i];
+        cerr << "·" << params[i];
     cerr << endl;
 
 	auto& index = channelMulti.get<0>();
@@ -103,14 +103,30 @@ void IrcClientImpl::onEvent<IrcEvent::Part>(const char *event, const char *origi
 
 
 static inline void onEventNumeric(irc_session_t * session, unsigned int event, const char * origin, const char ** params, unsigned int count) {
+    IrcClientImpl::getClientFromSessionId(session)->onEventNumeric(event, origin, params, count);
+}
+void IrcClientImpl::onEventNumeric(unsigned int event, const char * origin, const char ** params, unsigned int count) {
     cerr << "#";
     cerr.fill('0');
     cerr.width(3);
     cerr << event;
     cerr << ": " << (origin?origin:"");
     for (unsigned int i = 0; i < count; ++i)
-        cerr << " " << params[i];
+        cerr << "·" << params[i];
     cerr << endl;
+    
+    if (event == LIBIRC_RFC_RPL_NAMREPLY && count >= 4) {
+		const ChannelData& ircChannelData = getChannelData(params[2]);
+		auto& userList = const_cast<set<string>&>(ircChannelData.userList);
+		userList.clear();
+
+		istringstream is(params[3]);
+		string nick;
+		while(getline(is, nick, ' '))
+			userList.insert(nick);
+	}
+
+    userHandler.onNumericEvent(client, event, origin, params, count);
 }
 
 
@@ -142,6 +158,21 @@ IrcClientImpl::IrcClientImpl(IrcClient& client, UserHandler& userHandler, const 
 
 IrcClientImpl::~IrcClientImpl() {
     destroySession();
+}
+
+const ChannelData& IrcClientImpl::getChannelData(size_t channelId) {
+	auto& index = channelMulti.get<1>();
+    auto it = index.find(channelId);
+    if (it == index.end())
+		throw out_of_range("Could not find channel.");
+	return *it;
+}
+const ChannelData& IrcClientImpl::getChannelData(const std::string &channelName) {
+    auto& index = channelMulti.get<0>();
+    auto it = index.find(channelName);
+    if (it == index.end())
+		throw out_of_range("Could not find channel.");
+	return *it;
 }
 
 bool IrcClientImpl::createSession() {

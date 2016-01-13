@@ -25,6 +25,7 @@ class TcpClient : public std::enable_shared_from_this<TcpClient>, public std::st
     boost::asio::ip::tcp::socket socket;
     std::vector<uint8_t> data;
     iircCommon::DataType dataType;
+    uint16_t dataTypeBuffer;
     uint64_t dataSize;
 
     typedef std::list<std::weak_ptr<TcpClient>> ClientList;
@@ -42,6 +43,7 @@ public:
     void run(std::shared_ptr<ClientList> clientList, ClientList::iterator it);
     void write(const char* data, size_t length);
     virtual int sync(); // ostream flush
+    void send(iircCommon::DataType type, ::google::protobuf::Message& message);
 };
 
 

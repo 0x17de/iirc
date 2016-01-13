@@ -11,9 +11,6 @@
 #include <list>
 #include <thread>
 #include <map>
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/ordered_index.hpp>
 
 #include <libircclient.h>
 #include <thread>
@@ -22,22 +19,6 @@
 #include "IrcClient.h"
 
 
-
-typedef boost::multi_index::multi_index_container<
-  IrcChannelData,
-  boost::multi_index::indexed_by<
-    boost::multi_index::ordered_unique<
-      boost::multi_index::member<
-        IrcChannelData, std::string, &IrcChannelData::name
-      >
-    >,
-    boost::multi_index::ordered_unique<
-      boost::multi_index::member<
-        IrcChannelData, size_t, &IrcChannelData::channelId
-      >
-    >
-  >
-> IrcChannelData_multi;
 
 
 class IrcClient;
@@ -50,7 +31,7 @@ public:
     irc_session_t* session;
     std::thread runThread;
     int runResult;
-    IrcChannelData_multi channelMulti;
+    ChannelData_multi channelMulti;
 
 private:
     bool createSession();
@@ -63,7 +44,13 @@ public:
     IrcClientImpl(IrcClient& client, UserHandler& userHandler, const ServerData& serverData);
     ~IrcClientImpl();
 
-    template <IrcEvent> void onEvent(const char * event, const char * origin, const char ** params, unsigned int count);
+    template <IrcEvent>
+    void onEvent(const char * event, const char * origin, const char ** params, unsigned int count);
+    void onEventNumeric(unsigned int event, const char * origin, const char ** params, unsigned int count);
+
+    const ChannelData& getChannelData(size_t channelId);
+    const ChannelData& getChannelData(const std::string& channelName);
+
     std::string getConnectionId();
     bool disconnect();
     void displayError();

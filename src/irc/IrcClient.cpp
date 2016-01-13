@@ -1,6 +1,7 @@
 #include <exception>
 #include "IrcClient.h"
 #include "data/ServerData.h"
+#include "data/ChannelData.h"
 #include "UserHandler.h"
 #include "IrcClientImpl.h"
 
@@ -16,20 +17,19 @@ size_t IrcClient::getServerId() {
     return impl->serverData.serverId;
 }
 
-const IrcChannelData& IrcClient::getChannelData(size_t channelId) {
-	auto& index = impl->channelMulti.get<1>();
-    auto it = index.find(channelId);
-    if (it == index.end())
-		throw out_of_range("Could not find channel.");
-	return *it;
+const ServerData& IrcClient::getServerData() const {
+    return impl->serverData;
 }
 
-const IrcChannelData& IrcClient::getChannelData(const std::string &channelName) {
-    auto& index = impl->channelMulti.get<0>();
-    auto it = index.find(channelName);
-    if (it == index.end())
-		throw out_of_range("Could not find channel.");
-	return *it;
+const ChannelData& IrcClient::getChannelData(size_t channelId) {
+	return impl->getChannelData(channelId);
+}
+const ChannelData& IrcClient::getChannelData(const std::string &channelName) {
+    return impl->getChannelData(channelName);
+}
+
+const ChannelData_multi& IrcClient::getChannelDataMulti() const {
+	return impl->channelMulti;
 }
 
 bool IrcClient::connect() {

@@ -8,6 +8,7 @@
 #include <tcp/TcpInterface.h>
 #include <map>
 
+
 class Application {
     IniReader iniReader;
     DatabaseHandler databaseHandler;

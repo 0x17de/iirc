@@ -1,6 +1,8 @@
 #include "UserHandler.h"
 #include <iostream>
 #include <sstream>
+#include <string>
+#include <libirc_rfcnumeric.h>
 #include "server.pb.h"
 
 
@@ -60,6 +62,23 @@ void UserHandler::onEvent<IrcEvent::Quit>(IrcClient& client, const char *event, 
 
 }
 
+void UserHandler::onNumericEvent(IrcClient& client, unsigned int event, const char *origin, const char **params, unsigned int count) {
+	if (event == LIBIRC_RFC_RPL_NAMREPLY && count >= 4 /* userlist */) {
+		iircServer::UserList userList;
+		size_t channelId = client.getChannelData(params[2]).channelId;
+		userList.set_serverid(client.getServerId());
+		userList.set_channelid(channelId);
+
+		istringstream is(params[3]);
+		for (string nick : client.getChannelData(channelId).userList) {
+			auto user = userList.add_users();
+			user->set_nick(nick);
+		}
+		send(iircCommon::DataType::UserList, userList);
+	}
+}
+
+
 void UserHandler::send(iircCommon::DataType type, ::google::protobuf::Message& message) {
     uint16_t newType = type;
     uint64_t dataSize = message.ByteSize();
@@ -117,6 +136,10 @@ DatabaseHandler& UserHandler::getDatabaseHandler() {
 
 IrcClient& UserHandler::get(size_t serverId) {
     return ircClientByServer.at(serverId);
+}
+
+const std::unordered_map<size_t, IrcClient>& UserHandler::getServerList() {
+	return ircClientByServer;
 }
 
 void UserHandler::disconnect() {

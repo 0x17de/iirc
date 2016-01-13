@@ -28,11 +28,13 @@ public:
     bool connect(const ServerData& serverData);
     void disconnect();
     IrcClient& get(size_t serverId);
+    const std::unordered_map<size_t, IrcClient>& getServerList();
 
     static std::string splitNickFromIdentifier(const std::string identifier);
 
     template <IrcEvent>
     void onEvent(IrcClient& client, const char *event, const char *origin, const char **params, unsigned int count);
+    void onNumericEvent(IrcClient& client, unsigned int event, const char *origin, const char **params, unsigned int count);
 
     void send(iircCommon::DataType type, ::google::protobuf::Message& message);
 

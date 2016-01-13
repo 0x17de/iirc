@@ -87,14 +87,26 @@ int Application::run() {
 
                 iircServer::LoginResult loginResult;
                 loginResult.set_success(true);
-                uint64_t loginSize = loginResult.ByteSize();
+				client->send(iircCommon::DataType::LoginResult, loginResult);
 
-                ostream os(client.get());
-                const uint16_t newDataType = iircCommon::DataType::LoginResult;
-                os.write((char *) &newDataType, sizeof(uint16_t));
-                os.write((char *) &loginSize, sizeof(uint64_t));
-                loginResult.SerializeToOstream(&os);
-                os.flush();
+				iircServer::ConnectionsList connectionsList;
+				for (auto p : (*userHandler)->getServerList()) {
+					const IrcClient& client = p.second;
+					const ServerData& serverData = client.getServerData();
+					
+					auto server = connectionsList.add_servers();
+					server->set_id(serverData.serverId);
+					server->set_name(serverData.servername);
+					server->set_host(serverData.host);
+
+					for (auto channelData : client.getChannelDataMulti()) {
+						auto channel = server->add_channels();
+						channel->set_id(channelData.channelId);
+						channel->set_name(channelData.name);
+						channel->set_lastreadid(0); // TODO: lastread
+					}
+				}
+				client->send(iircCommon::DataType::ConnectionsList, connectionsList);
             }
         }
         else { // logged in
