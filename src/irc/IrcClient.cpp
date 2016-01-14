@@ -47,3 +47,4 @@ void IrcClient::join(const char* channel, const char* key) {
 void IrcClient::send(const std::string& channel, const std::string& message) {
 	impl->send(channel, message);
 }
+

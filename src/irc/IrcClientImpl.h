@@ -50,6 +50,7 @@ public:
 
     const ChannelData& getChannelData(size_t channelId);
     const ChannelData& getChannelData(const std::string& channelName);
+    void setUserList(std::string channelName, std::set<std::string> users);
 
     std::string getConnectionId();
     bool disconnect();

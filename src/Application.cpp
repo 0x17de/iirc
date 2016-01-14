@@ -91,15 +91,15 @@ int Application::run() {
 
 				iircServer::ConnectionsList connectionsList;
 				for (auto p : (*userHandler)->getServerList()) {
-					const IrcClient& client = p.second;
-					const ServerData& serverData = client.getServerData();
+					const IrcClient& ircClient = p.second;
+					const ServerData& serverData = ircClient.getServerData();
 					
 					auto server = connectionsList.add_servers();
 					server->set_id(serverData.serverId);
 					server->set_name(serverData.servername);
 					server->set_host(serverData.host);
 
-					for (auto channelData : client.getChannelDataMulti()) {
+					for (auto channelData : ircClient.getChannelDataMulti()) {
 						auto channel = server->add_channels();
 						channel->set_id(channelData.channelId);
 						channel->set_name(channelData.name);
@@ -107,6 +107,25 @@ int Application::run() {
 					}
 				}
 				client->send(iircCommon::DataType::ConnectionsList, connectionsList);
+
+                for (auto p : (*userHandler)->getServerList()) {
+                    const IrcClient& ircClient = p.second;
+                    const ServerData& serverData = ircClient.getServerData();
+
+                    for (auto channelData : ircClient.getChannelDataMulti()) {
+                        iircServer::UserList userList;
+
+                        userList.set_serverid(serverData.serverId);
+                        userList.set_channelid(channelData.channelId);
+
+                        for (auto nick : channelData.userList) {
+                            auto user = userList.add_users();
+                            user->set_nick(nick);
+                        }
+
+                        client->send(iircCommon::DataType::UserList, userList);
+                    }
+                }
             }
         }
         else { // logged in

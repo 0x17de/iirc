@@ -1,7 +1,6 @@
 #include "UserHandler.h"
 #include <iostream>
-#include <sstream>
-#include <string>
+#include <cstdint>
 #include <libirc_rfcnumeric.h>
 #include "server.pb.h"
 
@@ -89,11 +88,7 @@ void UserHandler::send(iircCommon::DataType type, ::google::protobuf::Message& m
             removeTcpClient(tcpClientWeak);
             continue;
         }
-        ostream os(tcpClient.get());
-        os.write((char*)&newType, sizeof(uint16_t));
-        os.write((char*)&dataSize, sizeof(uint64_t));
-        message.SerializeToOstream(&os);
-        os.flush();
+        tcpClient->send(type, message);
     }
 }
 

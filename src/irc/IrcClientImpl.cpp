@@ -116,14 +116,16 @@ void IrcClientImpl::onEventNumeric(unsigned int event, const char * origin, cons
     cerr << endl;
     
     if (event == LIBIRC_RFC_RPL_NAMREPLY && count >= 4) {
-		const ChannelData& ircChannelData = getChannelData(params[2]);
-		auto& userList = const_cast<set<string>&>(ircChannelData.userList);
-		userList.clear();
+		set<string> newUserList;
 
+        string channelName(params[2]);
 		istringstream is(params[3]);
 		string nick;
-		while(getline(is, nick, ' '))
-			userList.insert(nick);
+		while(getline(is, nick, ' ')) {
+            newUserList.insert(nick);
+        }
+
+		setUserList(channelName, newUserList);
 	}
 
     userHandler.onNumericEvent(client, event, origin, params, count);
@@ -248,4 +250,9 @@ void IrcClientImpl::join(const char* channel, const char* key) {
 
 void IrcClientImpl::send(const std::string& channel, const std::string& message) {
 	irc_cmd_msg(session, channel.c_str(), message.c_str());
+}
+
+void IrcClientImpl::setUserList(std::string channelName, std::set<std::string> users) {
+    auto& index = channelMulti.get<0>();
+    index.modify(index.find(channelName), [&](ChannelData& data){data.userList.swap(users);});
 }

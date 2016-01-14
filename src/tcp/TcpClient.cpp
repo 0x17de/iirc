@@ -5,6 +5,7 @@
 #include "TcpClient.h"
 #include "TcpInterfaceImpl.h"
 #include <iostream>
+#include <cstdint>
 #include "server.pb.h"
 
 
@@ -84,24 +85,16 @@ void TcpClient::readData() {
                             });
 }
 
-void TcpClient::write(const char *data, size_t length) {
+void TcpClient::write(const unsigned char *data, size_t length) {
     boost::asio::async_write(socket, boost::asio::buffer(data, length), [](const boost::system::error_code& ec, std::size_t bytes_transferred){});
 }
 
-int TcpClient::sync() {
-    string s(str());
-    str(std::basic_string<char>());
-    write(s.c_str(), s.size());
-    return 0;
-}
-
 void TcpClient::send(iircCommon::DataType type, ::google::protobuf::Message& message) {
-	uint16_t newType = type;
-    uint64_t dataSize = message.ByteSize();
-
-	ostream os(this);
-	os.write((char*)&newType, sizeof(uint16_t));
-	os.write((char*)&dataSize, sizeof(uint64_t));
-	message.SerializeToOstream(&os);
-	os.flush();
+    const uint64_t dataSize = message.ByteSize();
+    std::vector<unsigned char> data(10+dataSize);
+    unsigned char* d = data.data();
+    *(uint16_t*)d = type;
+    *(uint64_t*)(d+2) = dataSize;
+    message.SerializeToArray(d+10, dataSize);
+    write(d, dataSize+10);
 }

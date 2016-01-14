@@ -18,7 +18,7 @@
 
 
 class TcpInterfaceImpl;
-class TcpClient : public std::enable_shared_from_this<TcpClient>, public std::stringbuf {
+class TcpClient : public std::enable_shared_from_this<TcpClient> {
     TcpInterfaceImpl& tcpInterfaceImpl;
     UserHandler* userHandler = 0;
 
@@ -41,8 +41,7 @@ public:
     ~TcpClient();
 
     void run(std::shared_ptr<ClientList> clientList, ClientList::iterator it);
-    void write(const char* data, size_t length);
-    virtual int sync(); // ostream flush
+    void write(const unsigned char* data, size_t length);
     void send(iircCommon::DataType type, ::google::protobuf::Message& message);
 };
 
